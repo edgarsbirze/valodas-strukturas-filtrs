@@ -44,6 +44,37 @@
     }[c]));
   }
 
+function highlightMarkers(text, markers) {
+  if (!markers || !markers.length) return escapeHtml(text);
+
+  // Strādājam ar izejas HTML, nevis oriģinālo tekstu
+  let result = escapeHtml(text);
+
+  // Sakārtojam pēc teksta pozīcijas no beigām uz sākumu
+  const sorted = [...markers].sort((a, b) => b.index - a.index);
+
+  for (const m of sorted) {
+    const start = m.index;
+    const end = m.index + m.text.length;
+
+    // Drošības pārbaude
+    if (start < 0 || end > text.length) continue;
+
+    result =
+      result.slice(0, start) +
+      "<strong>" +
+      escapeHtml(text.slice(start, end)) +
+      "</strong>" +
+      result.slice(end);
+  }
+
+  return result;
+}
+
+
+
+
+  
   /* ---------------- sentence split ---------------- */
 
   function splitSentences(text) {
@@ -349,7 +380,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
           <div>
             <strong>#${s.id}</strong>
             ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-            <span class="muted">${escapeHtml(s.text)}</span>
+            <span class="muted">${highlightMarkers(s.text, s.markers)}</span>
           </div>
         </div>
       `;
@@ -359,7 +390,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
           <div>
             <strong>#${s.id}</strong>
             ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-            <span class="muted">${escapeHtml(s.text)}</span>
+            <span class="muted">${highlightMarkers(s.text, s.markers)}</span>
           </div>
           <div><span class="pill">NF ${s.nf}</span></div>
         </div>
@@ -444,6 +475,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
