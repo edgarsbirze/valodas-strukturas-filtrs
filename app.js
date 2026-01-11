@@ -105,6 +105,27 @@
     return window.RULES_V05 || window.RULES_V04 || window.RULES_V03 || null;
   }
 
+
+function detectConfigurations(markers) {
+  const set = new Set(markers.map(m => m.type));
+  const configs = [];
+
+  if (set.has("UNIVERSĀLIS") && set.has("NORMATĪVS")) {
+    configs.push("VISPĀRINĀTS_NORMATĪVS");
+  }
+
+  if (set.has("TELEOLOĢIJA") && set.has("NEDEFINĒTS_MEHĀNISMS")) {
+    configs.push("ATLIKTA_ATBILDĪBA");
+  }
+
+  if (set.has("RETROSPEKTĪVA_ETIĶETE")) {
+    configs.push("IDENTITĀTE_KĀ_CĒLONIS");
+  }
+
+  return configs;
+}
+
+  
   // ---------- analyze ----------
   function analyzeSentence(original, R) {
     const text = String(original || "").trim();
@@ -173,14 +194,20 @@
       }
     }
 
-    // sakārtojam
-    markers.sort((a, b) => a.index - b.index);
+// sakārtojam
+markers.sort((a, b) => a.index - b.index);
 
-    return {
-      text,
-      markers: markers.map(m => ({ text: m.text, type: m.type })),
-      nf: markers.length
-    };
+const simplifiedMarkers = markers.map(m => ({ text: m.text, type: m.type }));
+const configs = detectConfigurations(simplifiedMarkers);
+
+return {
+  text,
+  markers: simplifiedMarkers,
+  configs,              // <-- JAUNS
+  nf: simplifiedMarkers.length
+};
+
+
   }
 
   function analyze(text, R) {
@@ -195,7 +222,15 @@
     const nf_total = sentences.reduce((sum, s) => sum + s.nf, 0);
     const nf_average = sentences.length ? +(nf_total / sentences.length).toFixed(2) : 0;
 
-    return { sentences, nf_total, nf_average };
+    
+    const configCounts = {};
+    for (const s of sentences) {
+       for (const c of (s.configs || [])) {
+        configCounts[c] = (configCounts[c] || 0) + 1;
+    }
+}
+
+    return { sentences, nf_total, nf_average, configCounts };
   }
 
   // ---------- render ----------
@@ -212,11 +247,20 @@
       return;
     }
 
-    setSummary(
-      `Teikumi: <strong>${result.sentences.length}</strong> · ` +
-      `NF kopā: <strong>${result.nf_total}</strong> · ` +
-      `NF vidēji: <strong>${result.nf_average}</strong>`
-    );
+    const configs = result.configCounts || {};
+const topConfigs = Object.entries(configs)
+  .sort((a,b) => b[1] - a[1])
+  .slice(0, 3)
+  .map(([k,v]) => `${k}: ${v}`)
+  .join(" · ");
+
+setSummary(
+  `Teikumi: <strong>${result.sentences.length}</strong> · ` +
+  `NF kopā: <strong>${result.nf_total}</strong> · ` +
+  `NF vidēji: <strong>${result.nf_average}</strong>` +
+  (topConfigs ? ` · <span class="muted">${escapeHtml(topConfigs)}</span>` : "")
+);
+
 
     const html = result.sentences.map(s => {
       const markersHtml = s.markers.length
@@ -224,6 +268,9 @@
             `<li><code>${escapeHtml(m.text)}</code> <span class="pill">${escapeHtml(m.type)}</span></li>`
           ).join("")}</ul>`
         : `<div class="muted">Marķieri nav atrasti.</div>`;
+const configsHtml = (s.configs && s.configs.length)
+  ? `<div style="margin-top:8px;">${s.configs.map(c => `<span class="pill">${escapeHtml(c)}</span>`).join(" ")}</div>`
+  : "";
 
       return `
         <div class="sentence">
@@ -232,6 +279,8 @@
             <div><span class="pill">NF ${s.nf}</span></div>
           </div>
           ${markersHtml}
+          ${configsHtml}
+          
         </div>
       `;
     }).join("");
@@ -283,3 +332,4 @@
     boot();
   }
 })();
+
