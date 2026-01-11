@@ -47,28 +47,35 @@
 function highlightMarkers(text, markers) {
   if (!markers || !markers.length) return escapeHtml(text);
 
-  // Strādājam ar izejas HTML, nevis oriģinālo tekstu
-  let result = escapeHtml(text);
+  // paņemam tikai markerus ar derīgu index
+  const ms = markers
+    .filter(m => typeof m.index === "number" && m.index >= 0 && m.text)
+    .sort((a, b) => a.index - b.index);
 
-  // Sakārtojam pēc teksta pozīcijas no beigām uz sākumu
-  const sorted = [...markers].sort((a, b) => b.index - a.index);
+  if (!ms.length) return escapeHtml(text);
 
-  for (const m of sorted) {
+  let out = "";
+  let pos = 0;
+
+  for (const m of ms) {
     const start = m.index;
     const end = m.index + m.text.length;
 
-    // Drošības pārbaude
-    if (start < 0 || end > text.length) continue;
+    if (start < pos) continue;              // pārklājumi / dublikāti
+    if (start > text.length) continue;
+    if (end > text.length) continue;
 
-    result =
-      result.slice(0, start) +
-      "<strong>" +
-      escapeHtml(text.slice(start, end)) +
-      "</strong>" +
-      result.slice(end);
+    // pirms markera
+    out += escapeHtml(text.slice(pos, start));
+    // pats markers bold
+    out += "<strong>" + escapeHtml(text.slice(start, end)) + "</strong>";
+
+    pos = end;
   }
 
-  return result;
+  // atlikums
+  out += escapeHtml(text.slice(pos));
+  return out;
 }
 
 
@@ -233,7 +240,7 @@ if (Array.isArray(R.ABSTRACT_GOOD_PATTERNS)) {
 
     markers.sort((a, b) => a.index - b.index);
 
-    const simpleMarkers = markers.map(m => ({ text: m.text, type: m.type }));
+    const simpleMarkers = markers.map(m => ({ text: m.text, type: m.type, index: m.index }));
     const configs = detectConfigurations(simpleMarkers);
 
     return {
@@ -319,99 +326,101 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
   }
 
   /* ---------------- render ---------------- */
+function render(result) {
+  const summary = $("summary");
+  const sentencesEl = $("sentences");
 
-  function render(result) {
-    const summary = $("summary");
-    const sentencesEl = $("sentences");
+  // Summary (publiski kluss)
+  if (PUBLIC_MODE) {
+    summary.innerHTML = `Teikumi: <strong>${result.sentences.length}</strong>`;
+  } else {
+    const cfg = Object.entries(result.configCounts || {})
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(" · ");
+    summary.innerHTML =
+      `Teikumi: <strong>${result.sentences.length}</strong> · ` +
+      `NF kopā: <strong>${result.nf_total}</strong> · ` +
+      `NF vidēji: <strong>${result.nf_average}</strong>` +
+      (cfg ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
+  }
 
-    // Summary (publiski kluss)
-    if (PUBLIC_MODE) {
-      summary.innerHTML = `Teikumi: <strong>${result.sentences.length}</strong>`;
-    } else {
-      const cfg = Object.entries(result.configCounts)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(" · ");
-      summary.innerHTML =
-        `Teikumi: <strong>${result.sentences.length}</strong> · ` +
-        `NF kopā: <strong>${result.nf_total}</strong> · ` +
-        `NF vidēji: <strong>${result.nf_average}</strong>` +
-        (cfg ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
-    }
+  // Publiski: rādam teikumus ar signālu (konfigurācija vai vismaz 1 marķieris)
+  const visible = PUBLIC_MODE
+    ? result.sentences.filter(s => (s.configs?.length || 0) > 0 || (s.nf || 0) > 0)
+    : result.sentences;
 
-    // Publiski: rādam teikumus ar signālu (konfigurācija vai vismaz 1 marķieris)
-    const visible = PUBLIC_MODE
-      ? result.sentences.filter(s => (s.configs?.length || 0) > 0 || (s.nf || 0) > 0)
-      : result.sentences;
+  // Sakārtojam pēc svarīguma: konfigurācijas augstāk, tad NF
+  const ordered = [...visible].sort((a, b) => {
+    const aScore = (a.configs.length * 100) + a.nf;
+    const bScore = (b.configs.length * 100) + b.nf;
+    return bScore - aScore;
+  });
 
-    // Sakārtojam pēc svarīguma: konfigurācijas augstāk, tad NF
-    const ordered = [...visible].sort((a, b) => {
-      const aScore = (a.configs.length * 100) + a.nf;
-      const bScore = (b.configs.length * 100) + b.nf;
-      return bScore - aScore;
-    });
+  if (PUBLIC_MODE && ordered.length === 0) {
+    sentencesEl.innerHTML =
+      `<div class="muted">Pamēģini uzrakstīt 3–6 teikumus. Vari nospiest vienu no starteriem virs ievades lauka.</div>`;
+    return;
+  }
 
-    if (PUBLIC_MODE && ordered.length === 0) {
-      sentencesEl.innerHTML =
-        `<div class="muted">Pamēģini uzrakstīt 3–6 teikumus. Vari nospiest vienu no starteriem virs ievades lauka.</div>`;
-      return;
-    }
-
-    sentencesEl.innerHTML = ordered.map(s => {
-      const configLines = (s.configs || []).map(c => {
-        const label = CONFIG_LABELS[c] || c;
-        const q = CONFIG_QUESTIONS[c] || "";
-        return `
-          <div style="margin-top:8px;">
-            <span class="pill">${escapeHtml(label)}</span>
-            ${q ? `<div class="muted" style="margin-top:4px;">${escapeHtml(q)}</div>` : ``}
-          </div>
-        `;
-      }).join("");
-
-      // Ja nav konfigurāciju, bet ir marķieri: parādam 1–3 “Atrasts: …”
-      const foundWords = (s.markers || []).slice(0, 3).map(m => m.text).join(", ");
-
-      const publicBody = s.configs.length
-        ? configLines
-        : (s.markers.length ? `<div class="muted">Atrasts: ${escapeHtml(foundWords)}</div>` : ``);
-
-      const publicHeader = `
-        <div class="sentenceHeader">
-          <div>
-            <strong>#${s.id}</strong>
-            ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-            <span class="muted">${highlightMarkers(s.text, s.markers)}</span>
-          </div>
-        </div>
-      `;
-
-      const privateBody = `
-        <div class="sentenceHeader">
-          <div>
-            <strong>#${s.id}</strong>
-            ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-            <span class="muted">${escapeHtml(s.text)}</span>
-          </div>
-          <div><span class="pill">NF ${s.nf}</span></div>
-        </div>
-
-        ${s.markers.length
-          ? `<ul>${s.markers.map(m =>
-              `<li><code>${escapeHtml(m.text)}</code> <span class="pill">${escapeHtml(m.type)}</span></li>`
-            ).join("")}</ul>`
-          : `<div class="muted">Marķieri nav atrasti.</div>`}
-
-        ${s.configs.length ? configLines : ``}
-      `;
-
+  sentencesEl.innerHTML = ordered.map(s => {
+    const configLines = (s.configs || []).map(c => {
+      const label = CONFIG_LABELS[c] || c;
+      const q = CONFIG_QUESTIONS[c] || "";
       return `
-        <div class="sentence">
-          ${PUBLIC_MODE ? publicHeader : ``}
-          ${PUBLIC_MODE ? publicBody : privateBody}
+        <div style="margin-top:8px;">
+          <span class="pill">${escapeHtml(label)}</span>
+          ${q ? `<div class="muted" style="margin-top:4px;">${escapeHtml(q)}</div>` : ``}
         </div>
       `;
     }).join("");
-  }
+
+    // Ja nav konfigurāciju, bet ir marķieri: parādam 1–3 “Atrasts: …”
+    const foundWords = (s.markers || []).slice(0, 3).map(m => m.text).join(", ");
+
+    const publicBody = s.configs.length
+      ? configLines
+      : (s.markers.length ? `<div class="muted">Atrasts: ${escapeHtml(foundWords)}</div>` : ``);
+
+    const publicHeader = `
+      <div class="sentenceHeader">
+        <div>
+          <strong>#${s.id}</strong>
+          ${s.isTop ? `<span class="pill">TOP</span>` : ``}
+          <span class="muted">${highlightMarkers(s.text, s.markers)}</span>
+        </div>
+      </div>
+    `;
+
+    const privateBody = `
+      <div class="sentenceHeader">
+        <div>
+          <strong>#${s.id}</strong>
+          ${s.isTop ? `<span class="pill">TOP</span>` : ``}
+          <span class="muted">${escapeHtml(s.text)}</span>
+        </div>
+        <div><span class="pill">NF ${s.nf}</span></div>
+      </div>
+
+      ${s.markers.length
+        ? `<ul>${s.markers.map(m =>
+            `<li><code>${escapeHtml(m.text)}</code> <span class="pill">${escapeHtml(m.type)}</span></li>`
+          ).join("")}</ul>`
+        : `<div class="muted">Marķieri nav atrasti.</div>`}
+
+      ${s.configs.length ? configLines : ``}
+    `;
+
+    // ✅ Kritiskais labojums pret dubultošanos:
+    // PUBLIC_MODE => header + body
+    // PRIVATE_MODE => tikai privateBody (tas jau satur savu header)
+    return `
+      <div class="sentence">
+        ${PUBLIC_MODE ? (publicHeader + publicBody) : privateBody}
+      </div>
+    `;
+  }).join("");
+}
+
 
   /* ---------------- boot ---------------- */
 
@@ -475,6 +484,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
