@@ -54,7 +54,14 @@
     for (const p of R.RETRO_LABEL_PATTERNS) markers = markers.concat(findRegexMarkers(original, p, "RETROSPEKTĪVA_ETIĶETE"));
     for (const p of R.TELEOLOGY_PATTERNS) markers = markers.concat(findRegexMarkers(original, p, "TELEOLOĢIJA"));
     for (const p of R.UNDEFINED_MECH_PATTERNS) markers = markers.concat(findRegexMarkers(original, p, "NEDEFINĒTS_MEHĀNISMS"));
+    for (const p of R.UNIVERSAL_PATTERNS) markers = markers.concat(findRegexMarkers(original, p, "UNIVERSĀLIS"));
+    for (const p of R.NORMATIVE_PATTERNS) markers = markers.concat(findRegexMarkers(original, p, "NORMATĪVS"));
+    for (const p of R.ABSTRACT_GOOD_PATTERNS) markers = markers.concat(findRegexMarkers(original, p, "ABSTRAKTS_LABUMS"));
 
+
+    // CITU_IEKŠĒJAIS_STĀVOKLIS (regex)
+    markers = markers.concat(findRegexMarkers(original, R.OTHERS_STATE_PATTERN, "CITU_IEKŠĒJAIS_STĀVOKLIS"));
+    
     
     markers.sort((a,b) => a.index - b.index);
     return { text: original, markers: markers.map(({text,type})=>({text,type})), nf: markers.length };
@@ -105,5 +112,6 @@
     render(analyze(document.getElementById("input").value));
   });
 })();
+
 
 
