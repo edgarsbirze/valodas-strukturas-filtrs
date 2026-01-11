@@ -1,5 +1,18 @@
 (function () {
   "use strict";
+const PUBLIC_MODE = true;
+
+const CONFIG_LABELS = {
+  "VISPĀRINĀTS_NORMATĪVS": "Vispārināts “vajag”",
+  "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
+  "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums"
+};
+
+const CONFIG_QUESTIONS = {
+  "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas attiecas?",
+  "ATLIKTA_ATBILDĪBA": "Kas tieši šeit tiek atlikts vai atstāts “uz laiku”?",
+  "IDENTITĀTE_KĀ_CĒLONIS": "Kas mainītos, ja šis nebūtu skaidrojums?"
+};
 
   /* ---------------- utils ---------------- */
 
@@ -167,38 +180,55 @@
       .join(" · ");
 
     summary.innerHTML =
-      `Teikumi: <strong>${result.sentences.length}</strong> · ` +
-      `NF kopā: <strong>${result.nf_total}</strong> · ` +
-      `NF vidēji: <strong>${result.nf_average}</strong>` +
-      (cfg ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
+  `Teikumi: <strong>${result.sentences.length}</strong>` +
+  (cfg && !PUBLIC_MODE ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
 
     
     const ordered = [...result.sentences].sort((a,b) => (b.isTop === true) - (a.isTop === true));
 
-    sentencesEl.innerHTML = ordered.map(s => `
-      <div class="sentence">
-        <div class="sentenceHeader">
-          <div>
-            <strong>#${s.id}</strong>
-            ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-            <span class="muted">${escapeHtml(s.text)}</span>
-          </div>
-          <div><span class="pill">NF ${s.nf}</span></div>
-        </div>
-
-        ${s.markers.length
-          ? `<ul>${s.markers.map(m =>
-              `<li><code>${escapeHtml(m.text)}</code> <span class="pill">${escapeHtml(m.type)}</span></li>`
-            ).join("")}</ul>`
-          : `<div class="muted">Marķieri nav atrasti.</div>`}
-
-        ${s.configs.length
-          ? `<div style="margin-top:6px;">${s.configs.map(c =>
-              `<span class="pill">${escapeHtml(c)}</span>`
-            ).join(" ")}</div>`
-          : ``}
+    sentencesEl.innerHTML = result.sentences.map(s => {
+  const configLines = (s.configs || []).map(c => {
+    const label = CONFIG_LABELS[c] || c;
+    const q = CONFIG_QUESTIONS[c] || "";
+    return `
+      <div style="margin-top:8px;">
+        <span class="pill">${escapeHtml(label)}</span>
+        ${q ? `<div class="muted" style="margin-top:4px;">${escapeHtml(q)}</div>` : ``}
       </div>
-    `).join("");
+    `;
+  }).join("");
+
+  // publiski: nerādām “Marķieri nav atrasti.”, vienkārši klusējam
+  const publicBody = `
+    ${s.configs.length ? configLines : `<div class="muted">Nav atrasts nekas izteikts.</div>`}
+  `;
+
+  const privateBody = `
+    ${s.markers.length
+      ? `<ul>${s.markers.map(m =>
+          `<li><code>${escapeHtml(m.text)}</code> <span class="pill">${escapeHtml(m.type)}</span></li>`
+        ).join("")}</ul>`
+      : `<div class="muted">Marķieri nav atrasti.</div>`}
+
+    ${s.configs.length ? configLines : ``}
+  `;
+
+  return `
+    <div class="sentence">
+      <div class="sentenceHeader">
+        <div>
+          <strong>#${s.id}</strong>
+          ${s.isTop ? `<span class="pill">TOP</span>` : ``}
+          <span class="muted">${escapeHtml(s.text)}</span>
+        </div>
+        ${PUBLIC_MODE ? `` : `<div><span class="pill">NF ${s.nf}</span></div>`}
+      </div>
+
+      ${PUBLIC_MODE ? publicBody : privateBody}
+    </div>
+  `;
+}).join("");
+
   }
 
   /* ---------------- boot ---------------- */
@@ -226,4 +256,5 @@
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
