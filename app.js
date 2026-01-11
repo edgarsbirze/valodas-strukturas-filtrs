@@ -9,7 +9,7 @@
     "VISPĀRINĀTS_NORMATĪVS": "Vispārināts “vajag”",
     "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
     "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums",
-    "CITU_IEKŠĒJAIS_STĀVOKLIS": "Pieņēmums par citu iekšējo stāvokli"
+    "CITU_IEKŠĒJAIS_STĀVOKLIS": "Pieņēmums par citu iekšējo stāvokli",
     "ABSTRAKTS_LABUMS": "Abstrakts “labi/pareizi”"
   };
 
@@ -17,7 +17,7 @@
     "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas ir patiess?",
     "ATLIKTA_ATBILDĪBA": "Kas tieši šeit paliek bez mehānisma?",
     "IDENTITĀTE_KĀ_CĒLONIS": "Kāds būtu apraksts bez ‘es esmu tāds’ (tikai par rīcību)?",
-    "CITU_IEKŠĒJAIS_STĀVOKLIS": "Kāds ir novērojams fakts, nevis pieņēmums?"
+    "CITU_IEKŠĒJAIS_STĀVOKLIS": "Kāds ir novērojams fakts, nevis pieņēmums?",
     "ABSTRAKTS_LABUMS": "Kas tieši ir “labi” — pēc kā tu to atpazīsti?"
   };
 
@@ -400,4 +400,5 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
