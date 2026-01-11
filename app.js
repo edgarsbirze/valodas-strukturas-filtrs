@@ -247,6 +247,61 @@ const CONFIG_QUESTIONS = {
       console.error("Rules nav ielādēti");
       return;
     }
+const STARTERS = {
+  1: `Situācija:
+Kas tieši notiek (fakti, īsi)?
+
+Ko es gribēju:
+Ko es gaidīju no sevis / citiem?
+
+Ko es sev tagad saku:
+Kādas frāzes galvā atkārtojas?
+
+Ko es baidos atzīt:
+`,
+  2: `Kas man šobrīd sāp (vienā teikumā)?
+...
+
+Kurā vietā tas sāp (situācija/attiecības/darbs)?
+...
+
+Ko es sev par to stāstu?
+...
+
+Ko es gribētu, lai notiek?
+...
+`,
+  3: `Ko es sev šobrīd saku (uzraksti tieši frāzes):
+- ...
+- ...
+- ...
+
+Ko es ar šīm frāzēm mēģinu panākt?
+...
+
+Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
+...
+`
+};
+const startersEl = $("starters");
+if (startersEl) {
+  startersEl.addEventListener("click", (e) => {
+    const btnEl = e.target.closest(".starterBtn");
+    if (!btnEl) return;
+
+    const key = btnEl.getAttribute("data-starter");
+    const tpl = STARTERS[key];
+    if (!tpl) return;
+
+    // ieliek tekstu un fokusē
+    input.value = tpl;
+    input.focus();
+
+    // (neobligāti) uzreiz palaist analīzi
+    const result = analyze(input.value, R);
+    render(result);
+  });
+}
 
     btn.addEventListener("click", () => {
       const result = analyze(input.value, R);
@@ -256,5 +311,6 @@ const CONFIG_QUESTIONS = {
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
