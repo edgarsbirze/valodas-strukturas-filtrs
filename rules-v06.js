@@ -58,11 +58,11 @@ window.RULES_V06 = {
   // Šis ir labs pāris ar TELEOLOĢIJU konfigurācijai ATLIKTA_ATBILDĪBA.
   UNDEFINED_MECH_PATTERNS: [
     /\bpats\s+no\s+sevis\b/giu,
-    /\bpaš(?:a|i|ām|os)?\b/giu,               // uzmanīgi: šis ir "plašāks", ja dod troksni, izņem
+  
     /\bkaut\s+kā\b/giu,
     /\bkaut\s+kad\b/giu,
     /\bkaut\s+kas\b/giu,
-    /\bnotiks\b/giu,                           // ja dod troksni, vari noņemt; bet publiskajā režīmā “Atrasts:” der
+                   
     /\bizdosies\b/giu
   ],
 
@@ -133,6 +133,7 @@ MINDFOG_PATTERNS: [
 
   
 };
+
 
 
 
