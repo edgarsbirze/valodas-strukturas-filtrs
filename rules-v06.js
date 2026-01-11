@@ -99,7 +99,40 @@ ABSTRACT_GOOD_PATTERNS: [
   /\bsvarīgi\b/giu
 ],
 
+
+// 8) SALĪDZINĀJUMS / ETALONS — “labāk nekā”, “kā citi”, “normāli cilvēki”, “vajadzētu būt kā…”
+COMPARISON_PATTERNS: [
+  /\blabāk\s+nekā\b/giu,
+  /\bsliktāk\s+nekā\b/giu,
+  /\btāpat\s+kā\b/giu,
+  /\bgluži\s+kā\b/giu,
+  /\bkā\s+citi\b/giu,
+  /\bkā\s+visiem\b/giu,
+  /\bnormāl(?:s|a|i|u|ie|ajiem)\s+(?:cilvēk(?:s|i)|cilvēkiem)\b/giu,
+  /\bvajadzētu\s+būt\s+kā\b/giu
+],
+
+// 9) NEKONKRĒTAIS SUBJEKTS — “cilvēki”, “sabiedrība”, “visi”, “viņi” (kā miglains subjekts)
+VAGUE_SUBJECT_PATTERNS: [
+  /\bcilvēki\s+(?:saka|domā|uzskata|runā)\b/giu,
+  /\bsabiedrība\s+(?:saka|domā|uzskata|pieņem)\b/giu,
+  /\bvisi\s+(?:saka|domā|zina|uzskata)\b/giu,
+  /\bviņi\s+(?:saka|domā|grib|negrib|zina|uzskata)\b/giu
+],
+
+// 10) MINDFOG — “kaut kā”, “vienkārši”, “viss”, “nekas”, “kaut kas”
+MINDFOG_PATTERNS: [
+  /\bkaut\s+kā\b/giu,
+  /\bkaut\s+kas\b/giu,
+  /\bkaut\s+kur\b/giu,
+  /\bkaut\s+kad\b/giu,
+  /\bvieni?nkārši\b/giu,
+  /\bviss\b/giu,
+  /\bnekas\b/giu
+],
+
   
 };
+
 
 
