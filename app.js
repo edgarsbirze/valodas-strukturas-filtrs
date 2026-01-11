@@ -9,6 +9,7 @@
     "VISPĀRINĀTS_NORMATĪVS": "Vispārināts “vajag”",
     "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
     "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums",
+    "CITU_IEKŠĒJAIS_STĀVOKLIS": "Pieņēmums par citu iekšējo stāvokli"
     // (ja vēlāk gribi) "NORMATĪVS": "Normatīvs (“vajag/jā”)"
   };
 
@@ -16,6 +17,7 @@ const CONFIG_QUESTIONS = {
   "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas ir patiess?",
   "ATLIKTA_ATBILDĪBA": "Kas tieši šeit paliek bez mehānisma?",
   "IDENTITĀTE_KĀ_CĒLONIS": "Kāds būtu apraksts bez ‘es esmu tāds’ (tikai par rīcību)?"
+  "CITU_IEKŠĒJAIS_STĀVOKLIS": "Kāds ir novērojams fakts, nevis pieņēmums?"
 };
 
   /* ---------------- utils ---------------- */
@@ -65,7 +67,11 @@ const CONFIG_QUESTIONS = {
   function detectConfigurations(markers) {
     const set = new Set(markers.map(m => m.type));
     const configs = [];
-
+    
+if (set.has("CITU_IEKŠĒJAIS_STĀVOKLIS")) {
+  configs.push("CITU_IEKŠĒJAIS_STĀVOKLIS");
+}
+    
     if (set.has("UNIVERSĀLIS") && set.has("NORMATĪVS")) {
       configs.push("VISPĀRINĀTS_NORMATĪVS");
     }
@@ -118,6 +124,13 @@ const CONFIG_QUESTIONS = {
         markers.push(...findRegexMarkers(text, p, "RETROSPEKTĪVA_ETIĶETE"));
       }
     }
+
+    if (Array.isArray(R.OTHERS_STATE_PATTERNS)) {
+  for (const p of R.OTHERS_STATE_PATTERNS) {
+    markers.push(...findRegexMarkers(text, p, "CITU_IEKŠĒJAIS_STĀVOKLIS"));
+  }
+}
+
 
     // DEDUPE: type + index + text
     const seen = new Set();
@@ -371,6 +384,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
