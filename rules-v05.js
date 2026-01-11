@@ -32,21 +32,15 @@ window.RULES_V05 = {
 
   // ===== NORMATĪVS =====
   // “vajag/vajadzētu/nedrīkst” + konstrukcijas ar “jā-”
-  NORMATIVE_PATTERNS: [
-    /\bvajag\b/gi,
-    /\bvajadzētu\b/gi,
-    /\bnedrīkst\b/gi,
+ NORMATIVE_PATTERNS: [
+  /\bvajag\b/gi,
+  /\bvajadzētu\b/gi,
+  /\bnedrīkst\b/gi,
 
-    // ir jā + darbības vārda sākums (ļoti plaši, bet praktiski)
-    /\bir\s+jā[ -]?[a-zāčēģīķļņōŗšūž]+/giu,
-
-    // būtu jā...
-    /\bbūtu\s+jā[ -]?[a-zāčēģīķļņōŗšūž]+/giu,
-
-    // jā... (vienkārši “jā+verbs” bez “ir/būtu”)
-    // (ja kļūs par plašu, sašaurināsim v0.5.1)
-    /\bjā[ -]?[a-zāčēģīķļņōŗšūž]+/giu
-  ],
+  // tikai skaidras konstrukcijas
+  /\bir\s+jā\s+[a-zāčēģīķļņōŗšūž]+/giu,
+  /\bbūtu\s+jā\s+[a-zāčēģīķļņōŗšūž]+/giu
+],
 
   // ===== ABSTRAKTS_LABUMS =====
   // ķer adverbus + īpašības vārdu saknes ar locījumiem
@@ -153,3 +147,4 @@ window.RULES_V05 = {
     /\bit\s+will\s+sort\s+itself\s+out\b/gi
   ]
 };
+
