@@ -10,15 +10,14 @@
     "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
     "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums",
     "CITU_IEKŠĒJAIS_STĀVOKLIS": "Pieņēmums par citu iekšējo stāvokli"
-    // (ja vēlāk gribi) "NORMATĪVS": "Normatīvs (“vajag/jā”)"
   };
 
-const CONFIG_QUESTIONS = {
-  "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas ir patiess?",
-  "ATLIKTA_ATBILDĪBA": "Kas tieši šeit paliek bez mehānisma?",
-  "IDENTITĀTE_KĀ_CĒLONIS": "Kāds būtu apraksts bez ‘es esmu tāds’ (tikai par rīcību)?"
-  "CITU_IEKŠĒJAIS_STĀVOKLIS": "Kāds ir novērojams fakts, nevis pieņēmums?"
-};
+  const CONFIG_QUESTIONS = {
+    "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas ir patiess?",
+    "ATLIKTA_ATBILDĪBA": "Kas tieši šeit paliek bez mehānisma?",
+    "IDENTITĀTE_KĀ_CĒLONIS": "Kāds būtu apraksts bez ‘es esmu tāds’ (tikai par rīcību)?",
+    "CITU_IEKŠĒJAIS_STĀVOKLIS": "Kāds ir novērojams fakts, nevis pieņēmums?"
+  };
 
   /* ---------------- utils ---------------- */
 
@@ -67,25 +66,26 @@ const CONFIG_QUESTIONS = {
   function detectConfigurations(markers) {
     const set = new Set(markers.map(m => m.type));
     const configs = [];
-    
-if (set.has("CITU_IEKŠĒJAIS_STĀVOKLIS")) {
-  configs.push("CITU_IEKŠĒJAIS_STĀVOKLIS");
-}
-    
+
+    // L2: universālis + normatīvs
     if (set.has("UNIVERSĀLIS") && set.has("NORMATĪVS")) {
       configs.push("VISPĀRINĀTS_NORMATĪVS");
     }
 
+    // L2: teleoloģija + nedefinēts mehānisms
     if (set.has("TELEOLOĢIJA") && set.has("NEDEFINĒTS_MEHĀNISMS")) {
       configs.push("ATLIKTA_ATBILDĪBA");
     }
 
+    // L2: identitāte kā cēlonis
     if (set.has("RETROSPEKTĪVA_ETIĶETE")) {
       configs.push("IDENTITĀTE_KĀ_CĒLONIS");
     }
 
-    // Ja vēlāk gribi, lai publiski parādās arī “būtu jā...”
-    // if (set.has("NORMATĪVS")) configs.push("NORMATĪVS");
+    // L2 (vienkāršais): pieņēmums par citu iekšējo stāvokli
+    if (set.has("CITU_IEKŠĒJAIS_STĀVOKLIS")) {
+      configs.push("CITU_IEKŠĒJAIS_STĀVOKLIS");
+    }
 
     return configs;
   }
@@ -125,12 +125,15 @@ if (set.has("CITU_IEKŠĒJAIS_STĀVOKLIS")) {
       }
     }
 
+    // NEW: CITU_IEKŠĒJAIS_STĀVOKLIS
     if (Array.isArray(R.OTHERS_STATE_PATTERNS)) {
-  for (const p of R.OTHERS_STATE_PATTERNS) {
-    markers.push(...findRegexMarkers(text, p, "CITU_IEKŠĒJAIS_STĀVOKLIS"));
-  }
-}
-
+      for (const p of R.OTHERS_STATE_PATTERNS) {
+        markers.push(...findRegexMarkers(text, p, "CITU_IEKŠĒJAIS_STĀVOKLIS"));
+      }
+    } else if (Array.isArray(R.OTHERS_STATE_PATTERNS) === false && R.OTHERS_STATE_PATTERN instanceof RegExp) {
+      // fallback, ja kādā versijā ir viens regex, nevis masīvs
+      markers.push(...findRegexMarkers(text, R.OTHERS_STATE_PATTERN, "CITU_IEKŠĒJAIS_STĀVOKLIS"));
+    }
 
     // DEDUPE: type + index + text
     const seen = new Set();
@@ -168,7 +171,7 @@ if (set.has("CITU_IEKŠĒJAIS_STĀVOKLIS")) {
 
     const configCounts = {};
     for (const s of sentences) {
-      for (const c of s.configs) {
+      for (const c of (s.configs || [])) {
         configCounts[c] = (configCounts[c] || 0) + 1;
       }
     }
@@ -176,13 +179,12 @@ if (set.has("CITU_IEKŠĒJAIS_STĀVOKLIS")) {
     // TOP sentences (iekšēji) – konfigurācijas sver vairāk
     const scored = sentences.map((s, idx) => ({
       idx,
-      score: s.configs.length * 100 + s.nf
+      score: (s.configs.length * 100) + s.nf
     }));
     scored.sort((a, b) => b.score - a.score);
     const topSet = new Set(scored.filter(x => x.score > 0).slice(0, 3).map(x => x.idx));
     sentences.forEach((s, i) => {
       s.isTop = topSet.has(i);
-      s._score = scored.find(x => x.idx === i)?.score || 0; // debug (nav jāparāda)
     });
 
     return { sentences, nf_total, nf_average, configCounts };
@@ -249,7 +251,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
         (cfg ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
     }
 
-    // Publiski: rādam tikai teikumus ar signālu (konfigurācija vai vismaz 1 marķieris)
+    // Publiski: rādam teikumus ar signālu (konfigurācija vai vismaz 1 marķieris)
     const visible = PUBLIC_MODE
       ? result.sentences.filter(s => (s.configs?.length || 0) > 0 || (s.nf || 0) > 0)
       : result.sentences;
@@ -286,6 +288,16 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
         ? configLines
         : (s.markers.length ? `<div class="muted">Atrasts: ${escapeHtml(foundWords)}</div>` : ``);
 
+      const publicHeader = `
+        <div class="sentenceHeader">
+          <div>
+            <strong>#${s.id}</strong>
+            ${s.isTop ? `<span class="pill">TOP</span>` : ``}
+            <span class="muted">${escapeHtml(s.text)}</span>
+          </div>
+        </div>
+      `;
+
       const privateBody = `
         <div class="sentenceHeader">
           <div>
@@ -305,17 +317,6 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
         ${s.configs.length ? configLines : ``}
       `;
 
-      // Publiski header var būt vienkāršāks (bez NF)
-      const publicHeader = `
-        <div class="sentenceHeader">
-          <div>
-            <strong>#${s.id}</strong>
-            ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-            <span class="muted">${escapeHtml(s.text)}</span>
-          </div>
-        </div>
-      `;
-
       return `
         <div class="sentence">
           ${PUBLIC_MODE ? publicHeader : ``}
@@ -329,19 +330,21 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   function boot() {
     const input = $("input");
-    const btn = $("btnRun");
+    const btnRun = $("btnRun");
     const btnClear = $("btnClear");
 
-    
-    if (!input || !btn || !$("summary") || !$("sentences")) {
-      console.error("UI elementi nav atrasti");
+    const summaryEl = $("summary");
+    const sentencesEl = $("sentences");
+
+    if (!input || !btnRun || !summaryEl || !sentencesEl) {
+      console.error("UI elementi nav atrasti (input/btnRun/summary/sentences)");
       return;
     }
 
+    // Rules: izvēlies jaunāko, kas ir ielādēts
     const R = window.RULES_V06 || window.RULES_V05 || window.RULES_V04 || window.RULES;
-
     if (!R) {
-      console.error("Rules nav ielādēti (RULES_V06 / RULES_V05 / RULES_V04 / RULES)");
+      console.error("Rules nav ielādēti (RULES_V06/V05/V04/RULES)");
       return;
     }
 
@@ -361,30 +364,27 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
         input.value = tpl;
         input.focus();
 
-        // uzreiz palaist analīzi
         const result = analyze(input.value, R);
         render(result);
       });
     }
 
     // Run button
-    btn.addEventListener("click", () => {
-      if (btnClear) {
-  btnClear.addEventListener("click", () => {
-    input.value = "";
-    $("summary").innerHTML = "";
-    $("sentences").innerHTML = "";
-    input.focus();
-  });
-}
+    btnRun.addEventListener("click", () => {
       const result = analyze(input.value, R);
       render(result);
     });
+
+    // Clear button
+    if (btnClear) {
+      btnClear.addEventListener("click", () => {
+        input.value = "";
+        summaryEl.innerHTML = "";
+        sentencesEl.innerHTML = "";
+        input.focus();
+      });
+    }
   }
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
-
-
-
-
