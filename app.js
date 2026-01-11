@@ -47,28 +47,43 @@
 function highlightMarkers(text, markers) {
   if (!markers || !markers.length) return escapeHtml(text);
 
-  // paņemam tikai markerus ar derīgu index
+  // Ņemam tikai markerus ar derīgu index
   const ms = markers
     .filter(m => typeof m.index === "number" && m.index >= 0 && m.text)
+    .map(m => ({
+      index: m.index,
+      text: m.text,
+      type: m.type,
+      end: m.index + m.text.length
+    }))
+    // sakārtojam augošā secībā
     .sort((a, b) => a.index - b.index);
 
   if (!ms.length) return escapeHtml(text);
 
+  // noņemam pārklājumus/dublikātus: ja nākamais sākas pirms iepriekšējā beigām, izlaižam
+  const cleaned = [];
+  let lastEnd = -1;
+  for (const m of ms) {
+    if (m.index < lastEnd) continue;
+    cleaned.push(m);
+    lastEnd = m.end;
+  }
+
   let out = "";
   let pos = 0;
 
-  for (const m of ms) {
+  for (const m of cleaned) {
     const start = m.index;
-    const end = m.index + m.text.length;
+    const end = m.end;
+    if (start > text.length || end > text.length) continue;
 
-    if (start < pos) continue;              // pārklājumi / dublikāti
-    if (start > text.length) continue;
-    if (end > text.length) continue;
-
-    // pirms markera
+    // teksts pirms marķiera
     out += escapeHtml(text.slice(pos, start));
-    // pats markers bold
-    out += "<strong>" + escapeHtml(text.slice(start, end)) + "</strong>";
+
+    // marķieris bold + tooltip (title)
+    const title = m.type ? ` title="${escapeHtml(m.type)}"` : "";
+    out += `<strong${title}>${escapeHtml(text.slice(start, end))}</strong>`;
 
     pos = end;
   }
@@ -77,6 +92,7 @@ function highlightMarkers(text, markers) {
   out += escapeHtml(text.slice(pos));
   return out;
 }
+
 
 
 
@@ -484,6 +500,7 @@ function render(result) {
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
