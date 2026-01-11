@@ -5,6 +5,20 @@
 
   const PUBLIC_MODE = true;
 
+  const MARKER_LABELS = {
+  "UNIVERSĀLIS": "Vispārinājums",
+  "NORMATĪVS": "“Vajag/jā”",
+  "TELEOLOĢIJA": "“Ar laiku”",
+  "NEDEFINĒTS_MEHĀNISMS": "Bez mehānisma",
+  "RETROSPEKTĪVA_ETIĶETE": "Identitātes frāze",
+  "CITU_IEKŠĒJAIS_STĀVOKLIS": "Pieņēmums par citiem",
+  "ABSTRAKTS_LABUMS": "Abstrakts “labi/pareizi”",
+  "SALĪDZINĀJUMS_ETALONS": "Salīdzinājums",
+  "NEKONKRĒTS_SUBJEKTS": "Nekonkrēts subjekts",
+  "MINDFOG": "Migla"
+};
+
+
   const CONFIG_LABELS = {
     "VISPĀRINĀTS_NORMATĪVS": "Vispārināts “vajag”",
     "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
@@ -47,12 +61,12 @@
 function highlightMarkers(text, markers) {
   if (!markers || !markers.length) return escapeHtml(text);
 
+  // ✅ aizsardzība: neļaujam vienam match aptvert “gandrīz visu teikumu”
   const maxLen = Math.max(20, Math.floor(text.length * 0.6)); // <= 60% no teikuma
 
   const ms = markers
     .filter(m => typeof m.index === "number" && m.index >= 0 && m.text)
-    // ✅ aizsardzība pret "match visu teikumu"
-    .filter(m => m.text.length <= maxLen)
+    .filter(m => m.text.length <= maxLen) // ✅ izmet “visa teikuma” match
     .map(m => ({
       index: m.index,
       text: m.text,
@@ -76,19 +90,25 @@ function highlightMarkers(text, markers) {
   let pos = 0;
 
   for (const m of cleaned) {
-    const start = m.index;
-    const end = m.end;
-    if (start > text.length || end > text.length) continue;
+    if (m.index > text.length || m.end > text.length) continue;
 
-    out += escapeHtml(text.slice(pos, start));
-    const title = m.type ? ` title="${escapeHtml(m.type)}"` : "";
-    out += `<strong${title}>${escapeHtml(text.slice(start, end))}</strong>`;
-    pos = end;
+    out += escapeHtml(text.slice(pos, m.index));
+
+
+
+const titleText = MARKER_LABELS[m.type] || m.type || "";
+const title = titleText ? ` title="${escapeHtml(titleText)}"` : "";
+
+    
+    out += `<strong${title}>${escapeHtml(text.slice(m.index, m.end))}</strong>`;
+
+    pos = m.end;
   }
 
   out += escapeHtml(text.slice(pos));
   return out;
 }
+
 
 
 
@@ -255,6 +275,10 @@ if (Array.isArray(R.ABSTRACT_GOOD_PATTERNS)) {
     markers.sort((a, b) => a.index - b.index);
 
     const simpleMarkers = markers.map(m => ({ text: m.text, type: m.type, index: m.index }));
+if (text.includes("Gan jau")) {
+  console.log("DEBUG sentence:", text);
+  console.table(simpleMarkers);
+}
     const configs = detectConfigurations(simpleMarkers);
 
     return {
@@ -498,6 +522,7 @@ function render(result) {
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
