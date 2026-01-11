@@ -47,21 +47,23 @@
 function highlightMarkers(text, markers) {
   if (!markers || !markers.length) return escapeHtml(text);
 
-  // Ņemam tikai markerus ar derīgu index
+  const maxLen = Math.max(20, Math.floor(text.length * 0.6)); // <= 60% no teikuma
+
   const ms = markers
     .filter(m => typeof m.index === "number" && m.index >= 0 && m.text)
+    // ✅ aizsardzība pret "match visu teikumu"
+    .filter(m => m.text.length <= maxLen)
     .map(m => ({
       index: m.index,
       text: m.text,
       type: m.type,
       end: m.index + m.text.length
     }))
-    // sakārtojam augošā secībā
     .sort((a, b) => a.index - b.index);
 
   if (!ms.length) return escapeHtml(text);
 
-  // noņemam pārklājumus/dublikātus: ja nākamais sākas pirms iepriekšējā beigām, izlaižam
+  // noņem pārklājumus/dublikātus
   const cleaned = [];
   let lastEnd = -1;
   for (const m of ms) {
@@ -78,20 +80,16 @@ function highlightMarkers(text, markers) {
     const end = m.end;
     if (start > text.length || end > text.length) continue;
 
-    // teksts pirms marķiera
     out += escapeHtml(text.slice(pos, start));
-
-    // marķieris bold + tooltip (title)
     const title = m.type ? ` title="${escapeHtml(m.type)}"` : "";
     out += `<strong${title}>${escapeHtml(text.slice(start, end))}</strong>`;
-
     pos = end;
   }
 
-  // atlikums
   out += escapeHtml(text.slice(pos));
   return out;
 }
+
 
 
 
@@ -500,6 +498,7 @@ function render(result) {
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
