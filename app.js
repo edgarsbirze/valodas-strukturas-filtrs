@@ -194,6 +194,16 @@ function detectConfigurations(markers) {
       }
     }
 
+
+    // dedupe: type + index + text
+const seen = new Set();
+markers = markers.filter(m => {
+  const key = `${m.type}|${m.index}|${m.text}`;
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
+
 // sakārtojam
 markers.sort((a, b) => a.index - b.index);
 
@@ -332,4 +342,5 @@ const configsHtml = (s.configs && s.configs.length)
     boot();
   }
 })();
+
 
