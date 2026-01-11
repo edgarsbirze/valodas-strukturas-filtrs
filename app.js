@@ -1,18 +1,22 @@
 (function () {
   "use strict";
-const PUBLIC_MODE = true;
 
-const CONFIG_LABELS = {
-  "VISPĀRINĀTS_NORMATĪVS": "Vispārināts “vajag”",
-  "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
-  "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums"
-};
+  /* ---------------- settings ---------------- */
 
-const CONFIG_QUESTIONS = {
-  "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas attiecas?",
-  "ATLIKTA_ATBILDĪBA": "Kas tieši šeit tiek atlikts vai atstāts “uz laiku”?",
-  "IDENTITĀTE_KĀ_CĒLONIS": "Kas mainītos, ja šis nebūtu skaidrojums?"
-};
+  const PUBLIC_MODE = true;
+
+  const CONFIG_LABELS = {
+    "VISPĀRINĀTS_NORMATĪVS": "Vispārināts “vajag”",
+    "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
+    "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums",
+    // (ja vēlāk gribi) "NORMATĪVS": "Normatīvs (“vajag/jā”)"
+  };
+
+  const CONFIG_QUESTIONS = {
+    "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas attiecas?",
+    "ATLIKTA_ATBILDĪBA": "Kas tieši šeit tiek atlikts vai atstāts “uz laiku”?",
+    "IDENTITĀTE_KĀ_CĒLONIS": "Kas mainītos, ja šis nebūtu skaidrojums?"
+  };
 
   /* ---------------- utils ---------------- */
 
@@ -46,6 +50,7 @@ const CONFIG_QUESTIONS = {
     const out = [];
     if (!(regex instanceof RegExp)) return out;
 
+    // clone regex to avoid lastIndex leaks
     const re = new RegExp(regex.source, regex.flags);
     let m;
     while ((m = re.exec(text)) !== null) {
@@ -64,12 +69,17 @@ const CONFIG_QUESTIONS = {
     if (set.has("UNIVERSĀLIS") && set.has("NORMATĪVS")) {
       configs.push("VISPĀRINĀTS_NORMATĪVS");
     }
+
     if (set.has("TELEOLOĢIJA") && set.has("NEDEFINĒTS_MEHĀNISMS")) {
       configs.push("ATLIKTA_ATBILDĪBA");
     }
+
     if (set.has("RETROSPEKTĪVA_ETIĶETE")) {
       configs.push("IDENTITĀTE_KĀ_CĒLONIS");
     }
+
+    // Ja vēlāk gribi, lai publiski parādās arī “būtu jā...”
+    // if (set.has("NORMATĪVS")) configs.push("NORMATĪVS");
 
     return configs;
   }
@@ -109,7 +119,7 @@ const CONFIG_QUESTIONS = {
       }
     }
 
-    // DEDUPE
+    // DEDUPE: type + index + text
     const seen = new Set();
     markers = markers.filter(m => {
       const k = `${m.type}|${m.index}|${m.text}`;
@@ -150,23 +160,60 @@ const CONFIG_QUESTIONS = {
       }
     }
 
-    // TOP sentences
+    // TOP sentences (iekšēji) – konfigurācijas sver vairāk
     const scored = sentences.map((s, idx) => ({
       idx,
-      score: s.configs.length * 10 + s.nf
+      score: s.configs.length * 100 + s.nf
     }));
-
     scored.sort((a, b) => b.score - a.score);
-
-    const topSet = new Set(
-      scored.filter(x => x.score > 0).slice(0, 3).map(x => x.idx)
-    );
-
+    const topSet = new Set(scored.filter(x => x.score > 0).slice(0, 3).map(x => x.idx));
     sentences.forEach((s, i) => {
       s.isTop = topSet.has(i);
+      s._score = scored.find(x => x.idx === i)?.score || 0; // debug (nav jāparāda)
     });
 
     return { sentences, nf_total, nf_average, configCounts };
+  }
+
+  /* ---------------- starters ---------------- */
+
+  function getStarters() {
+    return {
+      1: `Situācija:
+Kas tieši notiek (fakti, īsi)?
+
+Ko es gribēju:
+Ko es gaidīju no sevis / citiem?
+
+Ko es sev tagad saku:
+Kādas frāzes galvā atkārtojas?
+
+Ko es baidos atzīt:
+`,
+      2: `Kas man šobrīd sāp (vienā teikumā)?
+...
+
+Kurā vietā tas sāp (situācija/attiecības/darbs)?
+...
+
+Ko es sev par to stāstu?
+...
+
+Ko es gribētu, lai notiek?
+...
+`,
+      3: `Ko es sev šobrīd saku (uzraksti tieši frāzes):
+- ...
+- ...
+- ...
+
+Ko es ar šīm frāzēm mēģinu panākt?
+...
+
+Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
+...
+`
+    };
   }
 
   /* ---------------- render ---------------- */
@@ -175,60 +222,94 @@ const CONFIG_QUESTIONS = {
     const summary = $("summary");
     const sentencesEl = $("sentences");
 
-    const cfg = Object.entries(result.configCounts)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(" · ");
+    // Summary (publiski kluss)
+    if (PUBLIC_MODE) {
+      summary.innerHTML = `Teikumi: <strong>${result.sentences.length}</strong>`;
+    } else {
+      const cfg = Object.entries(result.configCounts)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(" · ");
+      summary.innerHTML =
+        `Teikumi: <strong>${result.sentences.length}</strong> · ` +
+        `NF kopā: <strong>${result.nf_total}</strong> · ` +
+        `NF vidēji: <strong>${result.nf_average}</strong>` +
+        (cfg ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
+    }
 
-    summary.innerHTML =
-  `Teikumi: <strong>${result.sentences.length}</strong>` +
-  (cfg && !PUBLIC_MODE ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
+    // Publiski: rādam tikai teikumus ar signālu (konfigurācija vai vismaz 1 marķieris)
+    const visible = PUBLIC_MODE
+      ? result.sentences.filter(s => (s.configs?.length || 0) > 0 || (s.nf || 0) > 0)
+      : result.sentences;
 
-    
-    const ordered = [...result.sentences].sort((a,b) => (b.isTop === true) - (a.isTop === true));
+    // Sakārtojam pēc svarīguma: konfigurācijas augstāk, tad NF
+    const ordered = [...visible].sort((a, b) => {
+      const aScore = (a.configs.length * 100) + a.nf;
+      const bScore = (b.configs.length * 100) + b.nf;
+      return bScore - aScore;
+    });
 
-    sentencesEl.innerHTML = result.sentences.map(s => {
-  const configLines = (s.configs || []).map(c => {
-    const label = CONFIG_LABELS[c] || c;
-    const q = CONFIG_QUESTIONS[c] || "";
-    return `
-      <div style="margin-top:8px;">
-        <span class="pill">${escapeHtml(label)}</span>
-        ${q ? `<div class="muted" style="margin-top:4px;">${escapeHtml(q)}</div>` : ``}
-      </div>
-    `;
-  }).join("");
+    if (PUBLIC_MODE && ordered.length === 0) {
+      sentencesEl.innerHTML =
+        `<div class="muted">Pamēģini uzrakstīt 3–6 teikumus. Vari nospiest vienu no starteriem virs ievades lauka.</div>`;
+      return;
+    }
 
-  // publiski: nerādām “Marķieri nav atrasti.”, vienkārši klusējam
-  const publicBody = `
-    ${s.configs.length ? configLines : `<div class="muted">Nav atrasts nekas izteikts.</div>`}
-  `;
+    sentencesEl.innerHTML = ordered.map(s => {
+      const configLines = (s.configs || []).map(c => {
+        const label = CONFIG_LABELS[c] || c;
+        const q = CONFIG_QUESTIONS[c] || "";
+        return `
+          <div style="margin-top:8px;">
+            <span class="pill">${escapeHtml(label)}</span>
+            ${q ? `<div class="muted" style="margin-top:4px;">${escapeHtml(q)}</div>` : ``}
+          </div>
+        `;
+      }).join("");
 
-  const privateBody = `
-    ${s.markers.length
-      ? `<ul>${s.markers.map(m =>
-          `<li><code>${escapeHtml(m.text)}</code> <span class="pill">${escapeHtml(m.type)}</span></li>`
-        ).join("")}</ul>`
-      : `<div class="muted">Marķieri nav atrasti.</div>`}
+      // Ja nav konfigurāciju, bet ir marķieri: parādam 1–3 “Atrasts: …”
+      const foundWords = (s.markers || []).slice(0, 3).map(m => m.text).join(", ");
 
-    ${s.configs.length ? configLines : ``}
-  `;
+      const publicBody = s.configs.length
+        ? configLines
+        : (s.markers.length ? `<div class="muted">Atrasts: ${escapeHtml(foundWords)}</div>` : ``);
 
-  return `
-    <div class="sentence">
-      <div class="sentenceHeader">
-        <div>
-          <strong>#${s.id}</strong>
-          ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-          <span class="muted">${escapeHtml(s.text)}</span>
+      const privateBody = `
+        <div class="sentenceHeader">
+          <div>
+            <strong>#${s.id}</strong>
+            ${s.isTop ? `<span class="pill">TOP</span>` : ``}
+            <span class="muted">${escapeHtml(s.text)}</span>
+          </div>
+          <div><span class="pill">NF ${s.nf}</span></div>
         </div>
-        ${PUBLIC_MODE ? `` : `<div><span class="pill">NF ${s.nf}</span></div>`}
-      </div>
 
-      ${PUBLIC_MODE ? publicBody : privateBody}
-    </div>
-  `;
-}).join("");
+        ${s.markers.length
+          ? `<ul>${s.markers.map(m =>
+              `<li><code>${escapeHtml(m.text)}</code> <span class="pill">${escapeHtml(m.type)}</span></li>`
+            ).join("")}</ul>`
+          : `<div class="muted">Marķieri nav atrasti.</div>`}
 
+        ${s.configs.length ? configLines : ``}
+      `;
+
+      // Publiski header var būt vienkāršāks (bez NF)
+      const publicHeader = `
+        <div class="sentenceHeader">
+          <div>
+            <strong>#${s.id}</strong>
+            ${s.isTop ? `<span class="pill">TOP</span>` : ``}
+            <span class="muted">${escapeHtml(s.text)}</span>
+          </div>
+        </div>
+      `;
+
+      return `
+        <div class="sentence">
+          ${PUBLIC_MODE ? publicHeader : ``}
+          ${PUBLIC_MODE ? publicBody : privateBody}
+        </div>
+      `;
+    }).join("");
   }
 
   /* ---------------- boot ---------------- */
@@ -242,67 +323,35 @@ const CONFIG_QUESTIONS = {
       return;
     }
 
-    const R = window.RULES_V05 || window.RULES_V04;
+    const R = window.RULES_V05 || window.RULES_V04 || window.RULES;
     if (!R) {
-      console.error("Rules nav ielādēti");
+      console.error("Rules nav ielādēti (RULES_V05 / RULES_V04 / RULES)");
       return;
     }
-const STARTERS = {
-  1: `Situācija:
-Kas tieši notiek (fakti, īsi)?
 
-Ko es gribēju:
-Ko es gaidīju no sevis / citiem?
+    // Starter buttons
+    const startersEl = $("starters");
+    const STARTERS = getStarters();
 
-Ko es sev tagad saku:
-Kādas frāzes galvā atkārtojas?
+    if (startersEl) {
+      startersEl.addEventListener("click", (e) => {
+        const btnEl = e.target.closest(".starterBtn");
+        if (!btnEl) return;
 
-Ko es baidos atzīt:
-`,
-  2: `Kas man šobrīd sāp (vienā teikumā)?
-...
+        const key = btnEl.getAttribute("data-starter");
+        const tpl = STARTERS[key];
+        if (!tpl) return;
 
-Kurā vietā tas sāp (situācija/attiecības/darbs)?
-...
+        input.value = tpl;
+        input.focus();
 
-Ko es sev par to stāstu?
-...
+        // uzreiz palaist analīzi
+        const result = analyze(input.value, R);
+        render(result);
+      });
+    }
 
-Ko es gribētu, lai notiek?
-...
-`,
-  3: `Ko es sev šobrīd saku (uzraksti tieši frāzes):
-- ...
-- ...
-- ...
-
-Ko es ar šīm frāzēm mēģinu panākt?
-...
-
-Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
-...
-`
-};
-const startersEl = $("starters");
-if (startersEl) {
-  startersEl.addEventListener("click", (e) => {
-    const btnEl = e.target.closest(".starterBtn");
-    if (!btnEl) return;
-
-    const key = btnEl.getAttribute("data-starter");
-    const tpl = STARTERS[key];
-    if (!tpl) return;
-
-    // ieliek tekstu un fokusē
-    input.value = tpl;
-    input.focus();
-
-    // (neobligāti) uzreiz palaist analīzi
-    const result = analyze(input.value, R);
-    render(result);
-  });
-}
-
+    // Run button
     btn.addEventListener("click", () => {
       const result = analyze(input.value, R);
       render(result);
@@ -311,6 +360,3 @@ if (startersEl) {
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
-
-
-
