@@ -10,6 +10,7 @@
     "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
     "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums",
     "CITU_IEKŠĒJAIS_STĀVOKLIS": "Pieņēmums par citu iekšējo stāvokli"
+    "ABSTRAKTS_LABUMS": "Abstrakts “labi/pareizi”"
   };
 
   const CONFIG_QUESTIONS = {
@@ -17,6 +18,7 @@
     "ATLIKTA_ATBILDĪBA": "Kas tieši šeit paliek bez mehānisma?",
     "IDENTITĀTE_KĀ_CĒLONIS": "Kāds būtu apraksts bez ‘es esmu tāds’ (tikai par rīcību)?",
     "CITU_IEKŠĒJAIS_STĀVOKLIS": "Kāds ir novērojams fakts, nevis pieņēmums?"
+    "ABSTRAKTS_LABUMS": "Kas tieši ir “labi” — pēc kā tu to atpazīsti?"
   };
 
   /* ---------------- utils ---------------- */
@@ -86,7 +88,10 @@
     if (set.has("CITU_IEKŠĒJAIS_STĀVOKLIS")) {
       configs.push("CITU_IEKŠĒJAIS_STĀVOKLIS");
     }
-
+    
+if (set.has("ABSTRAKTS_LABUMS")) {
+  configs.push("ABSTRAKTS_LABUMS");
+}
     return configs;
   }
 
@@ -125,6 +130,12 @@
       }
     }
 
+if (Array.isArray(R.ABSTRACT_GOOD_PATTERNS)) {
+  for (const p of R.ABSTRACT_GOOD_PATTERNS) {
+    markers.push(...findRegexMarkers(text, p, "ABSTRAKTS_LABUMS"));
+  }
+}
+    
     // NEW: CITU_IEKŠĒJAIS_STĀVOKLIS
     if (Array.isArray(R.OTHERS_STATE_PATTERNS)) {
       for (const p of R.OTHERS_STATE_PATTERNS) {
@@ -388,3 +399,4 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
