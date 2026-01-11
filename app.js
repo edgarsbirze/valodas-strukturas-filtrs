@@ -325,9 +325,10 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
       return;
     }
 
-    const R = window.RULES_V05 || window.RULES_V04 || window.RULES;
+    const R = window.RULES_V06 || window.RULES_V05 || window.RULES_V04 || window.RULES;
+
     if (!R) {
-      console.error("Rules nav ielādēti (RULES_V05 / RULES_V04 / RULES)");
+      console.error("Rules nav ielādēti (RULES_V06 / RULES_V05 / RULES_V04 / RULES)");
       return;
     }
 
@@ -370,5 +371,6 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
