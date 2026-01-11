@@ -86,6 +86,20 @@ OTHERS_STATE_PATTERNS: [
   /\b(?:viņam|viņai|viņiem|viņām)\s+(?:liekas|šķiet)\b/giu
 ],
 
+ABSTRACT_GOOD_PATTERNS: [
+  /\blabi\b/giu,
+  /\bpareizi\b/giu,
+  /\bnormāli\b/giu,
+  /\bvajadzīgi\b/giu,
+  /\bvērts\b/giu,
+  /\bvērīgi\b/giu,          // ja kļūdaini – izņem
+  /\bvērtīgi\b/giu,
+  /\bjēga\b/giu,
+  /\bnozīmīgi\b/giu,
+  /\bsvarīgi\b/giu
+],
+
   
 };
+
 
