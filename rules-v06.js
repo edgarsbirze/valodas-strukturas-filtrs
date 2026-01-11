@@ -1,6 +1,9 @@
 window.RULES_V06 = {
   // 1) UNIVERSĀLIS — absolūtie vispārinājumi
   // Mērķis: noķert "katrs/katram/katru...", "visi/visiem/visu...", "neviens/nevienam...", "vienmēr/nekad"
+
+
+  
   UNIVERSAL_PATTERNS: [
     // katrs locījumi (katrs, katram, katru, katri, katriem, katros, ...)
     /\bkat(?:rs|ra|ram|ru|ri|ros|rās|riem|rām|rai|ras)\b/giu,
@@ -70,4 +73,19 @@ window.RULES_V06 = {
     /\bes\s+esmu\s+(?:cilvēks|tips|persona)\b/giu,
     /\bes\s+neesmu\s+(?:cilvēks|tips|persona)\b/giu
   ]
+
+  // 6) CITU_IEKŠĒJAIS_STĀVOKLIS — pieņēmumi par citu domām/jūtām/nolūkiem
+OTHERS_STATE_PATTERNS: [
+  // "viņš/viņa/viņi/viņas domā/šķiet/jūt/grib/negrib"
+  /\b(?:viņš|viņa|viņi|viņas)\s+(?:domā|jūt|grib|negrib|vēlas|nevēlas|šķiet|uzskata)\b/giu,
+
+  // "man liekas, ka viņš/viņa..."
+  /\bman\s+(?:liekas|šķiet)\s*,?\s+ka\s+(?:viņš|viņa|viņi|viņas)\b/giu,
+
+  // "viņam/viņai/viņiem/viņām liekas/šķiet"
+  /\b(?:viņam|viņai|viņiem|viņām)\s+(?:liekas|šķiet)\b/giu
+],
+
+  
 };
+
