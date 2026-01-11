@@ -240,6 +240,12 @@ return {
     }
 }
 
+   const configCounts = {};
+for (const s of sentences) {
+  for (const c of (s.configs || [])) {
+    configCounts[c] = (configCounts[c] || 0) + 1;
+  }
+} 
     return { sentences, nf_total, nf_average, configCounts };
   }
 
@@ -285,9 +291,13 @@ const configsHtml = (s.configs && s.configs.length)
       return `
         <div class="sentence">
           <div class="sentenceHeader">
-            <div><strong>#${s.id}</strong> <span class="muted">${escapeHtml(s.text)}</span></div>
-            <div><span class="pill">NF ${s.nf}</span></div>
-          </div>
+  <div>
+    <strong>#${s.id}</strong>
+    ${s.isTop ? `<span class="pill">TOP</span>` : ``}
+    <span class="muted">${escapeHtml(s.text)}</span>
+  </div>
+  <div><span class="pill">NF ${s.nf}</span></div>
+</div>
           ${markersHtml}
           ${configsHtml}
           
@@ -342,5 +352,6 @@ const configsHtml = (s.configs && s.configs.length)
     boot();
   }
 })();
+
 
 
