@@ -42,6 +42,24 @@
     "ABSTRAKTS_LABUMS": "Kas tieši ir “labi” — pēc kā tu to atpazīsti?"
   };
 
+const MARKER_PRIORITY = [
+  "TELEOLOĢIJA",
+  "NEDEFINĒTS_MEHĀNISMS",
+  "NORMATĪVS",
+  "UNIVERSĀLIS",
+  "RETROSPEKTĪVA_ETIĶETE",
+  "CITU_IEKŠĒJAIS_STĀVOKLIS",
+  "ABSTRAKTS_LABUMS",
+  "SALĪDZINĀJUMS_ETALONS",
+  "NEKONKRĒTS_SUBJEKTS",
+  "MINDFOG"
+];
+
+function priorityOf(type) {
+  const i = MARKER_PRIORITY.indexOf(type);
+  return i === -1 ? 999 : i; // nezināms = zemākā prioritāte
+}
+  
   /* ---------------- utils ---------------- */
 
   function $(id) {
@@ -261,13 +279,23 @@ if (Array.isArray(R.ABSTRACT_GOOD_PATTERNS)) {
     }
 
     // DEDUPE: type + index + text
-    const seen = new Set();
-    markers = markers.filter(m => {
-      const k = `${m.type}|${m.index}|${m.text}`;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
+// NORMALIZE: ja vienam un tam pašam fragmentam (index+text) ir vairāki tipi,
+// paturam tipu ar augstāko prioritāti (piem., TELEOLOĢIJA > NEDEFINĒTS_MEHĀNISMS)
+const bySpan = new Map(); // key = "index|text"
+for (const m of markers) {
+  const key = `${m.index}|${m.text}`;
+  const prev = bySpan.get(key);
+  if (!prev) {
+    bySpan.set(key, m);
+  } else {
+    // izvēlamies “stiprāko” tipu
+    if (priorityOf(m.type) < priorityOf(prev.type)) {
+      bySpan.set(key, m);
+    }
+  }
+}
+markers = Array.from(bySpan.values()).sort((a, b) => a.index - b.index);
+
 
     markers.sort((a, b) => a.index - b.index);
 
@@ -519,6 +547,7 @@ function render(result) {
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
