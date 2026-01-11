@@ -172,7 +172,10 @@
       `NF vidēji: <strong>${result.nf_average}</strong>` +
       (cfg ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
 
-    sentencesEl.innerHTML = result.sentences.map(s => `
+    
+    const ordered = [...result.sentences].sort((a,b) => (b.isTop === true) - (a.isTop === true));
+
+    sentencesEl.innerHTML = ordered.map(s => `
       <div class="sentence">
         <div class="sentenceHeader">
           <div>
@@ -223,3 +226,4 @@
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
