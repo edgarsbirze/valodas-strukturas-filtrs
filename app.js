@@ -317,7 +317,9 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
   function boot() {
     const input = $("input");
     const btn = $("btnRun");
+    const btnClear = $("btnClear");
 
+    
     if (!input || !btn || !$("summary") || !$("sentences")) {
       console.error("UI elementi nav atrasti");
       return;
@@ -353,6 +355,14 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
     // Run button
     btn.addEventListener("click", () => {
+      if (btnClear) {
+  btnClear.addEventListener("click", () => {
+    input.value = "";
+    $("summary").innerHTML = "";
+    $("sentences").innerHTML = "";
+    input.focus();
+  });
+}
       const result = analyze(input.value, R);
       render(result);
     });
@@ -360,3 +370,4 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
