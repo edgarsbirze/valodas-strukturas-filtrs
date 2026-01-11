@@ -37,11 +37,11 @@ window.RULES_V05 = {
   /\bvajadzētu\b/gi,
   /\bnedrīkst\b/gi,
 
-  // tikai skaidras konstrukcijas
-  /\bir\s+jā\s+[a-zāčēģīķļņōŗšūž]+/giu,
-  /\bbūtu\s+jā\s*[a-zāčēģīķļņōŗšūž]+/giu
+  // ir jā + darbības vārds (ar vai bez atstarpes)
+  /\bir\s+jā\s*[a-zāčēģīķļņōŗšūž]+/giu,
 
-   
+  // būtu jā + darbības vārds (ar vai bez atstarpes)
+  /\bbūtu\s+jā\s*[a-zāčēģīķļņōŗšūž]+/giu
 ],
 
   // ===== ABSTRAKTS_LABUMS =====
@@ -149,5 +149,6 @@ window.RULES_V05 = {
     /\bit\s+will\s+sort\s+itself\s+out\b/gi
   ]
 };
+
 
 
