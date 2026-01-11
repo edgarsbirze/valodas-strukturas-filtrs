@@ -61,23 +61,22 @@
 function highlightMarkers(text, markers) {
   if (!markers || !markers.length) return escapeHtml(text);
 
-  // ✅ aizsardzība: neļaujam vienam match aptvert “gandrīz visu teikumu”
-  const maxLen = Math.max(20, Math.floor(text.length * 0.6)); // <= 60% no teikuma
+  // neļaujam vienam match būt par lielu (drošībai)
+  const maxLen = Math.max(20, Math.floor(text.length * 0.6));
 
   const ms = markers
     .filter(m => typeof m.index === "number" && m.index >= 0 && m.text)
-    .filter(m => m.text.length <= maxLen) // ✅ izmet “visa teikuma” match
+    .filter(m => m.text.length <= maxLen)
     .map(m => ({
       index: m.index,
-      text: m.text,
-      type: m.type,
-      end: m.index + m.text.length
+      end: m.index + m.text.length,
+      type: m.type
     }))
     .sort((a, b) => a.index - b.index);
 
   if (!ms.length) return escapeHtml(text);
 
-  // noņem pārklājumus/dublikātus
+  // noņemam pārklājumus
   const cleaned = [];
   let lastEnd = -1;
   for (const m of ms) {
@@ -92,22 +91,20 @@ function highlightMarkers(text, markers) {
   for (const m of cleaned) {
     if (m.index > text.length || m.end > text.length) continue;
 
+    // Pirms marķiera (escape)
     out += escapeHtml(text.slice(pos, m.index));
 
-
-
-const titleText = MARKER_LABELS[m.type] || m.type || "";
-const title = titleText ? ` title="${escapeHtml(titleText)}"` : "";
-
-    
-    out += `<strong${title}>${escapeHtml(text.slice(m.index, m.end))}</strong>`;
+    // Marķieris (escape) + bold
+    out += "<strong>" + escapeHtml(text.slice(m.index, m.end)) + "</strong>";
 
     pos = m.end;
   }
 
+  // Atlikums (escape)
   out += escapeHtml(text.slice(pos));
   return out;
 }
+
 
 
 
@@ -522,6 +519,7 @@ function render(result) {
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
