@@ -10,6 +10,9 @@
     "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
     "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums",
     "CITU_IEKŠĒJAIS_STĀVOKLIS": "Pieņēmums par citu iekšējo stāvokli",
+    "SALĪDZINĀJUMS_ETALONS": "Salīdzinājums / etalons",
+     "NEKONKRĒTS_SUBJEKTS": "Nekonkrēts subjekts (“cilvēki/viņi”)",
+     "MINDFOG": "Migla (“kaut kā/viss/nekas”)",
     "ABSTRAKTS_LABUMS": "Abstrakts “labi/pareizi”"
   };
 
@@ -18,6 +21,10 @@
     "ATLIKTA_ATBILDĪBA": "Kas tieši šeit paliek bez mehānisma?",
     "IDENTITĀTE_KĀ_CĒLONIS": "Kāds būtu apraksts bez ‘es esmu tāds’ (tikai par rīcību)?",
     "CITU_IEKŠĒJAIS_STĀVOKLIS": "Kāds ir novērojams fakts, nevis pieņēmums?",
+    "SALĪDZINĀJUMS_ETALONS": "Ar ko tieši tu salīdzini (konkrēts etalons)?",
+"NEKONKRĒTS_SUBJEKTS": "Kurš tieši (viens reāls cilvēks vai grupa)?",
+"MINDFOG": "Kas ir “kaut kas” — nosauc vienu konkrētu lietu.",
+
     "ABSTRAKTS_LABUMS": "Kas tieši ir “labi” — pēc kā tu to atpazīsti?"
   };
 
@@ -74,6 +81,20 @@
       configs.push("VISPĀRINĀTS_NORMATĪVS");
     }
 
+if (set.has("SALĪDZINĀJUMS_ETALONS")) {
+  configs.push("SALĪDZINĀJUMS_ETALONS");
+}
+
+if (set.has("NEKONKRĒTS_SUBJEKTS")) {
+  configs.push("NEKONKRĒTS_SUBJEKTS");
+}
+
+if (set.has("MINDFOG")) {
+  configs.push("MINDFOG");
+}
+
+
+    
     if (set.has("ABSTRAKTS_LABUMS")) {
   configs.push("ABSTRAKTS_LABUMS");
 }
@@ -107,6 +128,29 @@
       }
     }
 
+// SALĪDZINĀJUMS / ETALONS
+if (Array.isArray(R.COMPARISON_PATTERNS)) {
+  for (const p of R.COMPARISON_PATTERNS) {
+    markers.push(...findRegexMarkers(text, p, "SALĪDZINĀJUMS_ETALONS"));
+  }
+}
+
+// NEKONKRĒTAIS SUBJEKTS
+if (Array.isArray(R.VAGUE_SUBJECT_PATTERNS)) {
+  for (const p of R.VAGUE_SUBJECT_PATTERNS) {
+    markers.push(...findRegexMarkers(text, p, "NEKONKRĒTS_SUBJEKTS"));
+  }
+}
+
+// MINDFOG
+if (Array.isArray(R.MINDFOG_PATTERNS)) {
+  for (const p of R.MINDFOG_PATTERNS) {
+    markers.push(...findRegexMarkers(text, p, "MINDFOG"));
+  }
+}
+
+
+    
     if (Array.isArray(R.NORMATIVE_PATTERNS)) {
       for (const p of R.NORMATIVE_PATTERNS) {
         markers.push(...findRegexMarkers(text, p, "NORMATĪVS"));
@@ -400,5 +444,6 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
