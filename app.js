@@ -390,7 +390,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
           <div>
             <strong>#${s.id}</strong>
             ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-            <span class="muted">${highlightMarkers(s.text, s.markers)}</span>
+            <span class="muted">${escapeHtml(s.text)}</span>
           </div>
           <div><span class="pill">NF ${s.nf}</span></div>
         </div>
@@ -475,6 +475,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
 
 
