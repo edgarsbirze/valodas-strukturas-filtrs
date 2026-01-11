@@ -12,7 +12,7 @@ window.RULES_V05 = {
   // Pārejam uz regex, kas ķer locījumus/formas
   UNIVERSAL_PATTERNS: [
     // visi/visu/visiem/visās/visos/visām/visiem...
-    /\bvis(a|i|u|iem|ām|ās|os|ām|iem)\b/gi,
+        /\bkat(r|ra|ram|ru|rs|ri|ros|rās|riem|rām|rai|ras)\b/gi,
 
     // vienmēr
     /\bvienmēr\b/gi,
@@ -39,7 +39,9 @@ window.RULES_V05 = {
 
   // tikai skaidras konstrukcijas
   /\bir\s+jā\s+[a-zāčēģīķļņōŗšūž]+/giu,
-  /\bbūtu\s+jā\s+[a-zāčēģīķļņōŗšūž]+/giu
+  /\bbūtu\s+jā\s*[a-zāčēģīķļņōŗšūž]+/giu
+
+   
 ],
 
   // ===== ABSTRAKTS_LABUMS =====
@@ -147,4 +149,5 @@ window.RULES_V05 = {
     /\bit\s+will\s+sort\s+itself\s+out\b/gi
   ]
 };
+
 
