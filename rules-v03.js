@@ -2,6 +2,11 @@
 // Visi noteikumi vienā vietā. Šo failu tu mainīsi visbiežāk.
 
 window.RULES_V03 = {
+  meta: { version: "0.3", updated: "2026-01-11", name: "Valodas struktūras filtrs" },
+  ...
+};
+
+window.RULES_V03 = {
   UNIVERSALS: ["visi","vienmēr","nekad","neviens","katrs","jebkurš"],
   NORMATIVES: ["vajag","vajadzētu","nedrīkst"],
   NORM_PATTERNS: [/\bir\s+jādara\b/gi, /\bbūtu\s+jā\b/gi],
@@ -43,3 +48,4 @@ window.RULES_V03 = {
     /\beverything\s+happens\s+for\s+a\s+reason\b/gi
   ]
 };
+
