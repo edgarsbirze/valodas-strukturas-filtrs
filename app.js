@@ -1,6 +1,6 @@
 // app.js
 (function () {
-  const R = window.RULES_V04;
+  const R = window.RULES_V05;
 
   function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
@@ -105,4 +105,5 @@
     render(analyze(document.getElementById("input").value));
   });
 })();
+
 
