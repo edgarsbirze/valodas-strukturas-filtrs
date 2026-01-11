@@ -12,11 +12,11 @@
     // (ja vēlāk gribi) "NORMATĪVS": "Normatīvs (“vajag/jā”)"
   };
 
-  const CONFIG_QUESTIONS = {
-    "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas attiecas?",
-    "ATLIKTA_ATBILDĪBA": "Kas tieši šeit tiek atlikts vai atstāts “uz laiku”?",
-    "IDENTITĀTE_KĀ_CĒLONIS": "Kas mainītos, ja šis nebūtu skaidrojums?"
-  };
+const CONFIG_QUESTIONS = {
+  "VISPĀRINĀTS_NORMATĪVS": "Kurā konkrētā situācijā tas ir patiess?",
+  "ATLIKTA_ATBILDĪBA": "Kas tieši šeit paliek bez mehānisma?",
+  "IDENTITĀTE_KĀ_CĒLONIS": "Kāds būtu apraksts bez ‘es esmu tāds’ (tikai par rīcību)?"
+};
 
   /* ---------------- utils ---------------- */
 
@@ -370,4 +370,5 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
