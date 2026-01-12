@@ -80,6 +80,46 @@
       .filter(Boolean);
   }
 
+const CHALLENGES = [
+  {
+    title: "Migla",
+    text: "Kaut kā pēdējā laikā viss ir sašķobījies, bet nekas īsti nenotiek.",
+    goal: "Pārraksti tā, lai nav: “kaut kā / viss / nekas”."
+  },
+  {
+    title: "Atlikta atbildība",
+    text: "Gan jau ar laiku viss sakārtosies pats no sevis.",
+    goal: "Pārraksti tā, lai ir skaidrs mehānisms: kas tieši notiks un kā."
+  },
+  {
+    title: "Vispārināts “vajag”",
+    text: "Katram būtu jāuzņemas atbildība.",
+    goal: "Pārraksti konkrēti: kuram, par ko, kādā situācijā."
+  },
+  {
+    title: "Nekonkrēts subjekts",
+    text: "Cilvēki saka, ka normāli cilvēki tā nedara.",
+    goal: "Pārraksti ar konkrētu subjektu: kurš tieši to saka / kurai grupai tas attiecas."
+  },
+  {
+    title: "Salīdzinājums bez etalona",
+    text: "Man vajadzētu būt kā citiem.",
+    goal: "Pārraksti, nosaucot konkrētu etalonu vai kritēriju (ne “citi”)."
+  },
+  {
+    title: "Abstrakts “pareizi”",
+    text: "Man ir svarīgi, lai viss būtu pareizi.",
+    goal: "Pārraksti, konkretizējot: pēc kā tieši tu nosaki “pareizi”."
+  }
+];
+
+function pickRandomChallenge() {
+  const i = Math.floor(Math.random() * CHALLENGES.length);
+  return CHALLENGES[i];
+}
+
+  
+  
   /* =========================
      MARKERS (REGEX)
   ========================= */
@@ -330,44 +370,6 @@
      STARTERS
   ========================= */
 
-  function getStarters() {
-    return {
-      1: `Situācija:
-Kas tieši notika (fakti, īsi)?
-
-Ko es gribēju:
-Ko es gaidīju no sevis / citiem?
-
-Ko es sev tagad saku:
-Kādas frāzes galvā atkārtojas?
-
-Ko es baidos atzīt:
-`,
-      2: `Kas man šobrīd sāp (vienā teikumā)?
-...
-
-Kurā vietā tas sāp (situācija/attiecības/darbs)?
-...
-
-Ko es sev par to stāstu?
-...
-
-Ko es gribētu, lai notiek?
-...
-`,
-      3: `Ko es sev šobrīd saku (uzraksti tieši frāzes):
-- ...
-- ...
-- ...
-
-Ko es ar šīm frāzēm mēģinu panākt?
-...
-
-Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
-...
-`
-    };
-  }
 
   /* =========================
      RENDER
@@ -493,7 +495,8 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
     // Starter buttons (ja ir)
     const startersEl = $("starters");
     const STARTERS = getStarters();
-
+const btnChallenge = $("btnChallenge");
+const challengeBox = $("challengeBox");
     if (startersEl) {
       startersEl.addEventListener("click", (e) => {
         const btnEl = e.target.closest(".starterBtn");
@@ -526,7 +529,53 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
         input.focus();
       });
     }
+
+// Challenge (spēles režīms)
+if (btnChallenge) {
+  btnChallenge.addEventListener("click", () => {
+    const c = pickRandomChallenge();
+
+    input.value = c.text;
+    input.focus();
+
+    if (challengeBox) {
+      challengeBox.innerHTML =
+        `<strong>Izaicinājums:</strong> ${escapeHtml(c.title)} — ` +
+        `${escapeHtml(c.goal)} ` +
+        `<span class="muted">(Mērķis: 0 brāķi)</span>`;
+    }
+
+    const result = analyze(input.value, R);
+    render(result);
+  });
+}
+
+    
+if (btnChallenge) {
+  btnChallenge.addEventListener("click", () => {
+    const c = pickRandomChallenge();
+
+    // Ieliek tekstu ievadē
+    input.value = c.text;
+    input.focus();
+
+    // Parāda instrukciju
+    if (challengeBox) {
+      challengeBox.innerHTML =
+        `<strong>Izaicinājums:</strong> ${escapeHtml(c.title)} — ` +
+        `${escapeHtml(c.goal)} ` +
+        `<span class="muted">(Mērķis: 0 brāķi)</span>`;
+    }
+
+    // Uzreiz parāda analīzi
+    const result = analyze(input.value, R);
+    render(result);
+  });
+}
+
+    
   }
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
