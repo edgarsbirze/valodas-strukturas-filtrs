@@ -72,7 +72,7 @@ window.RULES_V06 = {
     /\bes\s+esmu\s+tāds\b/giu,
     /\bes\s+esmu\s+(?:cilvēks|tips|persona)\b/giu,
     /\bes\s+neesmu\s+(?:cilvēks|tips|persona)\b/giu
-  ]
+  ],
 
   // 6) CITU_IEKŠĒJAIS_STĀVOKLIS — pieņēmumi par citu domām/jūtām/nolūkiem
 OTHERS_STATE_PATTERNS: [
@@ -133,6 +133,7 @@ MINDFOG_PATTERNS: [
 
   
 };
+
 
 
 
