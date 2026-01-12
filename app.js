@@ -366,9 +366,6 @@ function pickRandomChallenge() {
     return { sentences, nf_total, nf_average, configCounts };
   }
 
-  /* =========================
-     STARTERS
-  ========================= */
 
 
   /* =========================
@@ -492,27 +489,7 @@ function pickRandomChallenge() {
       return;
     }
 
-    // Starter buttons (ja ir)
-    const startersEl = $("starters");
-    const STARTERS = getStarters();
-const btnChallenge = $("btnChallenge");
-const challengeBox = $("challengeBox");
-    if (startersEl) {
-      startersEl.addEventListener("click", (e) => {
-        const btnEl = e.target.closest(".starterBtn");
-        if (!btnEl) return;
 
-        const key = btnEl.getAttribute("data-starter");
-        const tpl = STARTERS[key];
-        if (!tpl) return;
-
-        input.value = tpl;
-        input.focus();
-
-        const result = analyze(input.value, R);
-        render(result);
-      });
-    }
 
     // Run
     btnRun.addEventListener("click", () => {
@@ -578,4 +555,5 @@ if (btnChallenge) {
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+
 
