@@ -1,19 +1,22 @@
 (function () {
   "use strict";
 
-  /* ---------------- settings ---------------- */
+  /* =========================
+     SETTINGS
+  ========================= */
 
   const PUBLIC_MODE = true;
 
+  // Cilvēcīgie nosaukumi konfigurācijām (L2)
   const CONFIG_LABELS = {
     "VISPĀRINĀTS_NORMATĪVS": "Vispārināts “vajag”",
     "ATLIKTA_ATBILDĪBA": "Atlikts mehānisms",
     "IDENTITĀTE_KĀ_CĒLONIS": "Identitāte kā skaidrojums",
     "CITU_IEKŠĒJAIS_STĀVOKLIS": "Pieņēmums par citu iekšējo stāvokli",
+    "ABSTRAKTS_LABUMS": "Abstrakts “labi/pareizi”",
     "SALĪDZINĀJUMS_ETALONS": "Salīdzinājums / etalons",
-     "NEKONKRĒTS_SUBJEKTS": "Nekonkrēts subjekts (“cilvēki/viņi”)",
-     "MINDFOG": "Migla (“kaut kā/viss/nekas”)",
-    "ABSTRAKTS_LABUMS": "Abstrakts “labi/pareizi”"
+    "NEKONKRĒTS_SUBJEKTS": "Nekonkrēts subjekts (“cilvēki/viņi”)",
+    "MINDFOG": "Migla (“kaut kā/viss/nekas”)"
   };
 
   const CONFIG_QUESTIONS = {
@@ -21,14 +24,35 @@
     "ATLIKTA_ATBILDĪBA": "Kas tieši šeit paliek bez mehānisma?",
     "IDENTITĀTE_KĀ_CĒLONIS": "Kāds būtu apraksts bez ‘es esmu tāds’ (tikai par rīcību)?",
     "CITU_IEKŠĒJAIS_STĀVOKLIS": "Kāds ir novērojams fakts, nevis pieņēmums?",
+    "ABSTRAKTS_LABUMS": "Kas tieši ir “labi” — pēc kā tu to atpazīsti?",
     "SALĪDZINĀJUMS_ETALONS": "Ar ko tieši tu salīdzini (konkrēts etalons)?",
-"NEKONKRĒTS_SUBJEKTS": "Kurš tieši (viens reāls cilvēks vai grupa)?",
-"MINDFOG": "Kas ir “kaut kas” — nosauc vienu konkrētu lietu.",
-
-    "ABSTRAKTS_LABUMS": "Kas tieši ir “labi” — pēc kā tu to atpazīsti?"
+    "NEKONKRĒTS_SUBJEKTS": "Kurš tieši (viens reāls cilvēks vai grupa)?",
+    "MINDFOG": "Kas ir “kaut kas” — nosauc vienu konkrētu lietu."
   };
 
-  /* ---------------- utils ---------------- */
+  // Marķieru “stipruma” prioritāte vienam un tam pašam fragmentam (index+text)
+  // (piem., ja kāds fragments tiek noķerts ar 2 tipiem, paturam augstāko)
+  const MARKER_PRIORITY = [
+    "TELEOLOĢIJA",
+    "NEDEFINĒTS_MEHĀNISMS",
+    "NORMATĪVS",
+    "UNIVERSĀLIS",
+    "RETROSPEKTĪVA_ETIĶETE",
+    "CITU_IEKŠĒJAIS_STĀVOKLIS",
+    "ABSTRAKTS_LABUMS",
+    "SALĪDZINĀJUMS_ETALONS",
+    "NEKONKRĒTS_SUBJEKTS",
+    "MINDFOG"
+  ];
+
+  function priorityOf(type) {
+    const i = MARKER_PRIORITY.indexOf(type);
+    return i === -1 ? 999 : i;
+  }
+
+  /* =========================
+     DOM HELPERS
+  ========================= */
 
   function $(id) {
     return document.getElementById(id);
@@ -44,12 +68,9 @@
     }[c]));
   }
 
-
-
-
-
-  
-  /* ---------------- sentence split ---------------- */
+  /* =========================
+     TEXT / SENTENCE SPLIT
+  ========================= */
 
   function splitSentences(text) {
     return String(text || "")
@@ -59,13 +80,15 @@
       .filter(Boolean);
   }
 
-  /* ---------------- marker helpers ---------------- */
+  /* =========================
+     MARKERS (REGEX)
+  ========================= */
 
   function findRegexMarkers(text, regex, type) {
     const out = [];
     if (!(regex instanceof RegExp)) return out;
 
-    // clone regex to avoid lastIndex leaks
+    // clone to avoid lastIndex bleed
     const re = new RegExp(regex.source, regex.flags);
     let m;
     while ((m = re.exec(text)) !== null) {
@@ -75,10 +98,48 @@
     return out;
   }
 
-  /* ---------------- L2 configurations ---------------- */
+  // Bold-iezīmēšana (render laikā, indeksi pret oriģinālo tekstu)
+  function highlightMarkers(text, markers) {
+    if (!markers || !markers.length) return escapeHtml(text);
+
+    // Aizsardzība pret “noķerts viss teikums” (ja tāds gadās)
+    const maxLen = Math.max(20, Math.floor(text.length * 0.6));
+
+    const ms = markers
+      .filter(m => typeof m.index === "number" && m.index >= 0 && m.text)
+      .filter(m => m.text.length <= maxLen)
+      .map(m => ({ index: m.index, end: m.index + m.text.length }))
+      .sort((a, b) => a.index - b.index);
+
+    if (!ms.length) return escapeHtml(text);
+
+    // noņemam pārklājumus
+    const cleaned = [];
+    let lastEnd = -1;
+    for (const m of ms) {
+      if (m.index < lastEnd) continue;
+      cleaned.push(m);
+      lastEnd = m.end;
+    }
+
+    let out = "";
+    let pos = 0;
+    for (const m of cleaned) {
+      if (m.index > text.length || m.end > text.length) continue;
+      out += escapeHtml(text.slice(pos, m.index));
+      out += "<strong>" + escapeHtml(text.slice(m.index, m.end)) + "</strong>";
+      pos = m.end;
+    }
+    out += escapeHtml(text.slice(pos));
+    return out;
+  }
+
+  /* =========================
+     L2 CONFIGURATIONS
+  ========================= */
 
   function detectConfigurations(markers) {
-    const set = new Set(markers.map(m => m.type));
+    const set = new Set((markers || []).map(m => m.type));
     const configs = [];
 
     // L2: universālis + normatīvs
@@ -86,24 +147,6 @@
       configs.push("VISPĀRINĀTS_NORMATĪVS");
     }
 
-if (set.has("SALĪDZINĀJUMS_ETALONS")) {
-  configs.push("SALĪDZINĀJUMS_ETALONS");
-}
-
-if (set.has("NEKONKRĒTS_SUBJEKTS")) {
-  configs.push("NEKONKRĒTS_SUBJEKTS");
-}
-
-if (set.has("MINDFOG")) {
-  configs.push("MINDFOG");
-}
-
-
-    
-    if (set.has("ABSTRAKTS_LABUMS")) {
-  configs.push("ABSTRAKTS_LABUMS");
-}
-    
     // L2: teleoloģija + nedefinēts mehānisms
     if (set.has("TELEOLOĢIJA") && set.has("NEDEFINĒTS_MEHĀNISMS")) {
       configs.push("ATLIKTA_ATBILDĪBA");
@@ -114,100 +157,131 @@ if (set.has("MINDFOG")) {
       configs.push("IDENTITĀTE_KĀ_CĒLONIS");
     }
 
-    // L2 (vienkāršais): pieņēmums par citu iekšējo stāvokli
+    // L2: citu iekšējais stāvoklis
     if (set.has("CITU_IEKŠĒJAIS_STĀVOKLIS")) {
       configs.push("CITU_IEKŠĒJAIS_STĀVOKLIS");
+    }
+
+    // L2: abstrakts labums
+    if (set.has("ABSTRAKTS_LABUMS")) {
+      configs.push("ABSTRAKTS_LABUMS");
+    }
+
+    // L2: salīdzinājums/etalons
+    if (set.has("SALĪDZINĀJUMS_ETALONS")) {
+      configs.push("SALĪDZINĀJUMS_ETALONS");
+    }
+
+    // L2: nekonkrēts subjekts
+    if (set.has("NEKONKRĒTS_SUBJEKTS")) {
+      configs.push("NEKONKRĒTS_SUBJEKTS");
+    }
+
+    // L2: mindfog
+    if (set.has("MINDFOG")) {
+      configs.push("MINDFOG");
     }
 
     return configs;
   }
 
-  /* ---------------- analyze sentence ---------------- */
+  /* =========================
+     ANALYZE ONE SENTENCE
+  ========================= */
 
   function analyzeSentence(text, R) {
     let markers = [];
 
+    // UNIVERSĀLIS
     if (Array.isArray(R.UNIVERSAL_PATTERNS)) {
       for (const p of R.UNIVERSAL_PATTERNS) {
         markers.push(...findRegexMarkers(text, p, "UNIVERSĀLIS"));
       }
     }
 
-// SALĪDZINĀJUMS / ETALONS
-if (Array.isArray(R.COMPARISON_PATTERNS)) {
-  for (const p of R.COMPARISON_PATTERNS) {
-    markers.push(...findRegexMarkers(text, p, "SALĪDZINĀJUMS_ETALONS"));
-  }
-}
-
-// NEKONKRĒTAIS SUBJEKTS
-if (Array.isArray(R.VAGUE_SUBJECT_PATTERNS)) {
-  for (const p of R.VAGUE_SUBJECT_PATTERNS) {
-    markers.push(...findRegexMarkers(text, p, "NEKONKRĒTS_SUBJEKTS"));
-  }
-}
-
-// MINDFOG
-if (Array.isArray(R.MINDFOG_PATTERNS)) {
-  for (const p of R.MINDFOG_PATTERNS) {
-    markers.push(...findRegexMarkers(text, p, "MINDFOG"));
-  }
-}
-
-
-    
+    // NORMATĪVS
     if (Array.isArray(R.NORMATIVE_PATTERNS)) {
       for (const p of R.NORMATIVE_PATTERNS) {
         markers.push(...findRegexMarkers(text, p, "NORMATĪVS"));
       }
     }
-    
-if (Array.isArray(R.ABSTRACT_GOOD_PATTERNS)) {
-  for (const p of R.ABSTRACT_GOOD_PATTERNS) {
-    markers.push(...findRegexMarkers(text, p, "ABSTRAKTS_LABUMS"));
-  }
-}
 
+    // ABSTRAKTS_LABUMS
+    if (Array.isArray(R.ABSTRACT_GOOD_PATTERNS)) {
+      for (const p of R.ABSTRACT_GOOD_PATTERNS) {
+        markers.push(...findRegexMarkers(text, p, "ABSTRAKTS_LABUMS"));
+      }
+    }
+
+    // TELEOLOĢIJA
     if (Array.isArray(R.TELEOLOGY_PATTERNS)) {
       for (const p of R.TELEOLOGY_PATTERNS) {
         markers.push(...findRegexMarkers(text, p, "TELEOLOĢIJA"));
       }
     }
 
+    // NEDEFINĒTS_MEHĀNISMS
     if (Array.isArray(R.UNDEFINED_MECH_PATTERNS)) {
       for (const p of R.UNDEFINED_MECH_PATTERNS) {
         markers.push(...findRegexMarkers(text, p, "NEDEFINĒTS_MEHĀNISMS"));
       }
     }
 
+    // RETROSPEKTĪVA_ETIĶETE
     if (Array.isArray(R.RETRO_LABEL_PATTERNS)) {
       for (const p of R.RETRO_LABEL_PATTERNS) {
         markers.push(...findRegexMarkers(text, p, "RETROSPEKTĪVA_ETIĶETE"));
       }
     }
 
-    // NEW: CITU_IEKŠĒJAIS_STĀVOKLIS
+    // CITU_IEKŠĒJAIS_STĀVOKLIS (array vai fallback uz vienu regex)
     if (Array.isArray(R.OTHERS_STATE_PATTERNS)) {
       for (const p of R.OTHERS_STATE_PATTERNS) {
         markers.push(...findRegexMarkers(text, p, "CITU_IEKŠĒJAIS_STĀVOKLIS"));
       }
-    } else if (Array.isArray(R.OTHERS_STATE_PATTERNS) === false && R.OTHERS_STATE_PATTERN instanceof RegExp) {
-      // fallback, ja kādā versijā ir viens regex, nevis masīvs
+    } else if (R.OTHERS_STATE_PATTERN instanceof RegExp) {
       markers.push(...findRegexMarkers(text, R.OTHERS_STATE_PATTERN, "CITU_IEKŠĒJAIS_STĀVOKLIS"));
     }
 
-    // DEDUPE: type + index + text
-    const seen = new Set();
-    markers = markers.filter(m => {
-      const k = `${m.type}|${m.index}|${m.text}`;
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
+    // SALĪDZINĀJUMS / ETALONS
+    if (Array.isArray(R.COMPARISON_PATTERNS)) {
+      for (const p of R.COMPARISON_PATTERNS) {
+        markers.push(...findRegexMarkers(text, p, "SALĪDZINĀJUMS_ETALONS"));
+      }
+    }
 
-    markers.sort((a, b) => a.index - b.index);
+    // NEKONKRĒTAIS SUBJEKTS
+    if (Array.isArray(R.VAGUE_SUBJECT_PATTERNS)) {
+      for (const p of R.VAGUE_SUBJECT_PATTERNS) {
+        markers.push(...findRegexMarkers(text, p, "NEKONKRĒTS_SUBJEKTS"));
+      }
+    }
 
-    const simpleMarkers = markers.map(m => ({ text: m.text, type: m.type }));
+    // MINDFOG
+    if (Array.isArray(R.MINDFOG_PATTERNS)) {
+      for (const p of R.MINDFOG_PATTERNS) {
+        markers.push(...findRegexMarkers(text, p, "MINDFOG"));
+      }
+    }
+
+    // NORMALIZE / DEDUPE by (index|text) with priority
+    const bySpan = new Map(); // key = "index|text"
+    for (const m of markers) {
+      const key = `${m.index}|${m.text}`;
+      const prev = bySpan.get(key);
+      if (!prev) {
+        bySpan.set(key, m);
+      } else {
+        if (priorityOf(m.type) < priorityOf(prev.type)) {
+          bySpan.set(key, m);
+        }
+      }
+    }
+    markers = Array.from(bySpan.values()).sort((a, b) => a.index - b.index);
+
+    // saglabājam markerus ar index (vajag bold)
+    const simpleMarkers = markers.map(m => ({ text: m.text, type: m.type, index: m.index }));
+
     const configs = detectConfigurations(simpleMarkers);
 
     return {
@@ -218,7 +292,9 @@ if (Array.isArray(R.ABSTRACT_GOOD_PATTERNS)) {
     };
   }
 
-  /* ---------------- analyze text ---------------- */
+  /* =========================
+     ANALYZE WHOLE TEXT
+  ========================= */
 
   function analyze(text, R) {
     const sentencesRaw = splitSentences(text);
@@ -237,26 +313,27 @@ if (Array.isArray(R.ABSTRACT_GOOD_PATTERNS)) {
       }
     }
 
-    // TOP sentences (iekšēji) – konfigurācijas sver vairāk
+    // TOP: konfigurācijas sver vairāk
     const scored = sentences.map((s, idx) => ({
       idx,
       score: (s.configs.length * 100) + s.nf
     }));
     scored.sort((a, b) => b.score - a.score);
+
     const topSet = new Set(scored.filter(x => x.score > 0).slice(0, 3).map(x => x.idx));
-    sentences.forEach((s, i) => {
-      s.isTop = topSet.has(i);
-    });
+    sentences.forEach((s, i) => { s.isTop = topSet.has(i); });
 
     return { sentences, nf_total, nf_average, configCounts };
   }
 
-  /* ---------------- starters ---------------- */
+  /* =========================
+     STARTERS
+  ========================= */
 
   function getStarters() {
     return {
       1: `Situācija:
-Kas tieši notiek (fakti, īsi)?
+Kas tieši notika (fakti, īsi)?
 
 Ko es gribēju:
 Ko es gaidīju no sevis / citiem?
@@ -292,17 +369,19 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
     };
   }
 
-  /* ---------------- render ---------------- */
+  /* =========================
+     RENDER
+  ========================= */
 
   function render(result) {
     const summary = $("summary");
     const sentencesEl = $("sentences");
 
-    // Summary (publiski kluss)
+    // Summary
     if (PUBLIC_MODE) {
       summary.innerHTML = `Teikumi: <strong>${result.sentences.length}</strong>`;
     } else {
-      const cfg = Object.entries(result.configCounts)
+      const cfg = Object.entries(result.configCounts || {})
         .map(([k, v]) => `${k}: ${v}`)
         .join(" · ");
       summary.innerHTML =
@@ -312,12 +391,12 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
         (cfg ? ` · <span class="muted">${escapeHtml(cfg)}</span>` : "");
     }
 
-    // Publiski: rādam teikumus ar signālu (konfigurācija vai vismaz 1 marķieris)
+    // PUBLIC: tikai teikumi ar signālu
     const visible = PUBLIC_MODE
       ? result.sentences.filter(s => (s.configs?.length || 0) > 0 || (s.nf || 0) > 0)
       : result.sentences;
 
-    // Sakārtojam pēc svarīguma: konfigurācijas augstāk, tad NF
+    // Sort: configs augstāk, tad NF
     const ordered = [...visible].sort((a, b) => {
       const aScore = (a.configs.length * 100) + a.nf;
       const bScore = (b.configs.length * 100) + b.nf;
@@ -354,7 +433,7 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
           <div>
             <strong>#${s.id}</strong>
             ${s.isTop ? `<span class="pill">TOP</span>` : ``}
-            <span class="muted">${escapeHtml(s.text)}</span>
+            <span class="muted">${highlightMarkers(s.text, s.markers)}</span>
           </div>
         </div>
       `;
@@ -378,16 +457,18 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
         ${s.configs.length ? configLines : ``}
       `;
 
+      // PUBLIC => header+body; PRIVATE => tikai privateBody (tas jau satur header)
       return `
         <div class="sentence">
-          ${PUBLIC_MODE ? publicHeader : ``}
-          ${PUBLIC_MODE ? publicBody : privateBody}
+          ${PUBLIC_MODE ? (publicHeader + publicBody) : privateBody}
         </div>
       `;
     }).join("");
   }
 
-  /* ---------------- boot ---------------- */
+  /* =========================
+     BOOT / UI WIRING
+  ========================= */
 
   function boot() {
     const input = $("input");
@@ -398,18 +479,18 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
     const sentencesEl = $("sentences");
 
     if (!input || !btnRun || !summaryEl || !sentencesEl) {
-      console.error("UI elementi nav atrasti (input/btnRun/summary/sentences)");
+      console.error("UI elementi nav atrasti. Nepieciešami id: input, btnRun, summary, sentences (+ btnClear pēc izvēles).");
       return;
     }
 
-    // Rules: izvēlies jaunāko, kas ir ielādēts
+    // izvēlamies jaunāko rules (V06 > V05 > V04 > RULES)
     const R = window.RULES_V06 || window.RULES_V05 || window.RULES_V04 || window.RULES;
     if (!R) {
-      console.error("Rules nav ielādēti (RULES_V06/V05/V04/RULES)");
+      console.error("Rules nav ielādēti (RULES_V06/V05/V04/RULES). Pārbaudi script src secību index.html.");
       return;
     }
 
-    // Starter buttons
+    // Starter buttons (ja ir)
     const startersEl = $("starters");
     const STARTERS = getStarters();
 
@@ -430,13 +511,13 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
       });
     }
 
-    // Run button
+    // Run
     btnRun.addEventListener("click", () => {
       const result = analyze(input.value, R);
       render(result);
     });
 
-    // Clear button
+    // Clear
     if (btnClear) {
       btnClear.addEventListener("click", () => {
         input.value = "";
@@ -449,7 +530,3 @@ Kas būtu “neērtais fakts”, ko šīs frāzes aizvieto?
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
-
-
-
-
